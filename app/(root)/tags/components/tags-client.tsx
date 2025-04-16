@@ -17,14 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tag } from '@/types/types';
+import { Tags } from '@/types/types';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 
 interface TagsClientProps {
-  tags: Tag[];
+  tags: Tags[];
 }
 
 const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
@@ -74,7 +74,6 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
                 <TableHead>Created At</TableHead>
               </TableRow>
             </TableHeader>
@@ -86,7 +85,6 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
                   onClick={() => router.push(`/tags/tag/${tag.id}`)}
                 >
                   <TableCell>{tag.name}</TableCell>
-                  <TableCell>{tag.description}</TableCell>
                   <TableCell>
                     {tag.created_at
                       ? new Date(tag.created_at).toLocaleString('en-GB', {

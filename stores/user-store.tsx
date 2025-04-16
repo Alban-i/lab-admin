@@ -1,9 +1,9 @@
-import { ProfilesWithRegistrations } from '@/types/types';
+import { ProfilesWithRoles } from '@/types/types';
 import { create } from 'zustand';
 
 interface userStoreProps {
-  profile: ProfilesWithRegistrations | null;
-  setProfile: (c: ProfilesWithRegistrations) => void;
+  profile: ProfilesWithRoles | null;
+  setProfile: (c: ProfilesWithRoles) => void;
 }
 
 const userStore = create<userStoreProps>((set) => ({

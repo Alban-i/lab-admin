@@ -15,6 +15,10 @@ const ProfileContentPage = async ({
     return <div className="px-4">Aucun profil n'a été trouvée.</div>;
   }
 
+  if (!profile) {
+    return <div className="px-4">Profile not found.</div>;
+  }
+
   return (
     <div className="">
       <ProfileForm profile={profile} roles={roles} />

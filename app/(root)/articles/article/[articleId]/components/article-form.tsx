@@ -41,7 +41,6 @@ const initialData = {
   content: '',
   slug: '',
   status: 'draft',
-  is_published: false,
   category_id: null,
   id: undefined,
   published_at: null,
@@ -74,7 +73,6 @@ interface ArticleFormProps {
           summary: string;
           slug: string;
           status: string;
-          is_published: boolean | null;
           author_id: string | null;
           published_at: string | null;
           created_at: string | null;

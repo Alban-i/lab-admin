@@ -20,7 +20,14 @@ const getArticle = async (
     console.log(error);
     return 'error';
   }
-  return data || null;
+
+  if (!data) return null;
+
+  return {
+    ...data,
+    is_published: data.status.toLowerCase() === 'published',
+    category_id: data.category_id?.toString() || null,
+  };
 };
 
 export default getArticle;

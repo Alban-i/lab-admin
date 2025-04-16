@@ -6,9 +6,11 @@ export type Role = 'admin' | 'author' | 'reader' | 'banned';
 export type ArticleStatus = 'Draft' | 'Published' | 'Archived';
 export type Articles = Omit<
   Database['public']['Tables']['articles']['Row'],
-  'status'
+  'status' | 'category_id'
 > & {
   status: ArticleStatus;
+  category_id: string | null;
+  is_published: boolean;
 };
 
 export type Users = Database['public']['Tables']['profiles']['Row'];

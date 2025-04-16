@@ -1,7 +1,7 @@
 import { createClient } from '@/providers/supabase/server';
-import { Profiles } from '@/types/types';
+import { ProfilesWithRoles } from '@/types/types';
 
-const getMyProfile = async (): Promise<Profiles | null> => {
+const getMyProfile = async (): Promise<ProfilesWithRoles | null> => {
   const supabase = await createClient();
 
   const { data: sessionData, error: sessionError } =
@@ -13,14 +13,14 @@ const getMyProfile = async (): Promise<Profiles | null> => {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(`*, role_id(*)`)
     .eq('id', sessionData.user?.id)
     .single();
 
   if (error) {
     console.log(error);
   }
-  return (data as Profiles) || null;
+  return data || null;
 };
 
 export default getMyProfile;

@@ -1,10 +1,10 @@
 'use client';
 
 import userStore from '@/stores/user-store';
-import { ProfilesWithRegistrations } from '@/types/types';
+import { ProfilesWithRoles } from '@/types/types';
 import { useEffect } from 'react';
 
-const AccountClient = ({ profile }: { profile: ProfilesWithRegistrations }) => {
+const AccountClient = ({ profile }: { profile: ProfilesWithRoles }) => {
   const { setProfile } = userStore();
 
   // ZUSTAND
