@@ -1,0 +1,4 @@
+{
+  "typescript.preferences.packageManager": "bun",
+  "npm.packageManager": "bun"
+}
