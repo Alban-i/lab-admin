@@ -64,7 +64,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
     role_id: profile?.role_id ? profile.role_id.id.toString() : '',
   };
 
-  console.log(defaultValues);
+  console.log('Profile Data:', profile);
+  console.log('Default Values:', defaultValues);
 
   const [loading, setLoading] = useState(false);
 
@@ -88,12 +89,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
   const action = defaultValues.id ? 'Save changes' : 'Create';
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+    console.log('Form Values:', values);
+    console.log('Profile ID being used:', defaultValues.id);
 
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const updateQuery = supabase
         .from('profiles')
         .update({
           username: values.username,
@@ -102,8 +104,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
           role_id: parseInt(values.role_id),
         })
         .eq('id', defaultValues.id)
-        .select()
-        .single();
+        .select();
+
+      const { data, error } = await updateQuery;
+
+      console.log('Update Response:', { data, error });
 
       if (error) {
         toast.error(error.message);
@@ -111,20 +116,29 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
         return;
       }
 
-      // Update the form with the new data
-      if (data) {
+      if (!data || data.length === 0) {
+        toast.error('No profile was updated. The profile may not exist.');
+        setLoading(false);
+        return;
+      }
+
+      // Update the form with the new data (using first result)
+      const updatedProfile = data[0];
+      if (updatedProfile) {
         form.reset({
-          username: data.username ?? '',
-          full_name: data.full_name ?? '',
-          phone: data.phone ?? '',
-          role_id: data.role_id ? data.role_id.toString() : '',
+          username: updatedProfile.username ?? '',
+          full_name: updatedProfile.full_name ?? '',
+          phone: updatedProfile.phone ?? '',
+          role_id: updatedProfile.role_id
+            ? updatedProfile.role_id.toString()
+            : '',
         });
       }
 
       toast.success(toastMessage);
 
       if (!defaultValues.id) {
-        router.push(`/profiles/profile/${data.id}`);
+        router.push(`/profiles/profile/${updatedProfile.id}`);
       }
 
       form.reset();

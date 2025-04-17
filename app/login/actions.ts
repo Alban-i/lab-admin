@@ -53,7 +53,10 @@ export async function signup(formData: FormData) {
     if (error) {
       return { ok: false, message: error.message };
     } else {
-      return { ok: true };
+      return {
+        ok: true,
+        message: 'Un email de confirmation vous a été envoyé.',
+      };
     }
   } catch (err) {
     return { ok: false, status: 500, message: (err as Error).message };

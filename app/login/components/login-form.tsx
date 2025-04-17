@@ -142,7 +142,7 @@ export function LoginForm() {
         <CardTitle className="text-2xl text-center">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-2">
+        {/* <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             className="py-8"
@@ -177,7 +177,7 @@ export function LoginForm() {
           </Button>
         </div>
 
-        <Separator className="my-4" />
+        <Separator className="my-4" /> */}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -227,11 +227,11 @@ export function LoginForm() {
                   </Button>
                 )}
 
-                {/* {scenario === 'signup' && (
+                {scenario === 'signup' && (
                   <Button type="submit" className="w-full mt-2 bg-sky-700">
                     Créer un compte
                   </Button>
-                )} */}
+                )}
 
                 {scenario === 'resetpassword' && (
                   <Button type="submit" className="w-full mt-2 bg-sky-700">
@@ -252,7 +252,7 @@ export function LoginForm() {
                     </Button>
                   )}
 
-                  {/* {(scenario === 'login' || scenario === 'resetpassword') && (
+                  {(scenario === 'login' || scenario === 'resetpassword') && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -261,7 +261,7 @@ export function LoginForm() {
                     >
                       Créer un compte
                     </Button>
-                  )} */}
+                  )}
 
                   {(scenario === 'signup' || scenario === 'resetpassword') && (
                     <Button
