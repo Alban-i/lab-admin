@@ -4,6 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import {
+  Articles,
+  ProfilesWithRoles,
+  Tags,
+  ArticleStatus,
+} from '@/types/types';
 
 import {
   Form,
@@ -12,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 
 import {
@@ -27,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
@@ -42,49 +50,27 @@ const initialData = {
   slug: '',
   status: 'draft',
   category_id: null,
+  author_id: null,
   id: undefined,
   published_at: null,
-};
-
-interface Category {
-  id: number;
-  name: string;
-}
-
-interface Tag {
-  id: number;
-  name: string;
-}
+  is_featured: false,
+} as const;
 
 const formSchema = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   slug: z.string().min(1),
   category_id: z.string().optional(),
+  author_id: z.string().min(1, 'Author is required'),
+  is_featured: z.boolean(),
 });
 
 interface ArticleFormProps {
-  article:
-    | (Omit<
-        {
-          id: string;
-          title: string;
-          content: string;
-          summary: string;
-          slug: string;
-          status: string;
-          author_id: string | null;
-          published_at: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-          category_id: string | null;
-        },
-        'created_at'
-      > & { id?: string })
-    | null;
-  categories: Category[];
-  tags: Tag[];
+  article: (Omit<Articles, 'is_published'> & { id?: string }) | null;
+  categories: { id: number; name: string }[];
+  tags: { id: number; name: string; created_at: string; updated_at: string }[];
   selectedTagIds: number[];
+  authors: ProfilesWithRoles[];
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
@@ -92,27 +78,32 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   categories,
   tags,
   selectedTagIds,
+  authors,
 }) => {
-  const defaultValues = article ?? initialData;
+  const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
-  type ArticleStatus = 'draft' | 'published' | 'archived';
-  const [status, setStatus] = useState<ArticleStatus>(
-    defaultValues.status as ArticleStatus
+  type FormStatus = 'draft' | 'published' | 'archived';
+  const [status, setStatus] = useState<FormStatus>(
+    (defaultValues.status?.toLowerCase() as FormStatus) ?? 'draft'
   );
 
   const supabase = createClient();
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  type FormData = z.infer<typeof formSchema>;
+
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: defaultValues.title ?? '',
       summary: defaultValues.summary ?? '',
       slug: defaultValues.slug ?? '',
       category_id: defaultValues.category_id?.toString() ?? undefined,
+      author_id: defaultValues.author_id?.toString() ?? undefined,
+      is_featured: defaultValues.is_featured ?? false,
     },
   });
 
@@ -132,11 +123,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         content: content,
         slug: values.slug,
         status,
+        is_featured: values.is_featured,
         published_at:
-          status === 'published' && defaultValues.status !== 'published'
+          status === 'published' &&
+          defaultValues.status?.toLowerCase() !== 'published'
             ? new Date().toISOString()
             : defaultValues.published_at,
         category_id: values.category_id ? Number(values.category_id) : null,
+        author_id: values.author_id || null,
         ...(defaultValues.id && { id: defaultValues.id }),
       };
 
@@ -196,6 +190,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         summary: data.summary ?? '',
         slug: data.slug ?? '',
         category_id: data.category_id?.toString() ?? undefined,
+        author_id: data.author_id?.toString() ?? undefined,
+        is_featured: data.is_featured ?? false,
       });
 
       toast.success(toastMessage);
@@ -338,7 +334,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   <FormLabel className="mb-2">Status</FormLabel>
                   <TabToggle
                     state={status}
-                    setState={(value) => setStatus(value as ArticleStatus)}
+                    setState={(value) => setStatus(value as FormStatus)}
                     picklist={[
                       { value: 'draft', label: 'Draft' },
                       { value: 'published', label: 'Published' },
@@ -374,6 +370,58 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="author_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                        Author
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl className="w-full">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an author" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {authors.map((author) => (
+                            <SelectItem key={author.id} value={author.id}>
+                              {author.username || author.email || author.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="is_featured"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0 col-span-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Feature this article</FormLabel>
+                        <FormDescription>
+                          Featured articles will be displayed prominently on the
+                          homepage
+                        </FormDescription>
+                      </div>
                     </FormItem>
                   )}
                 />

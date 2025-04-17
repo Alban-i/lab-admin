@@ -1,9 +1,5 @@
 import { createClient } from '@/providers/supabase/server';
-
-export interface Tag {
-  id: number;
-  name: string;
-}
+import { Tags } from '@/types/types';
 
 export default async function getTags() {
   const supabase = await createClient();
@@ -15,5 +11,5 @@ export default async function getTags() {
     return [];
   }
 
-  return data as Tag[];
+  return data as Tags[];
 }

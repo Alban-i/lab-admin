@@ -96,12 +96,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
       const { data, error } = await supabase
         .from('profiles')
         .update({
-          id: defaultValues.id.toString(),
           username: values.username,
           full_name: values.full_name,
           phone: values.phone,
           role_id: parseInt(values.role_id),
         })
+        .eq('id', defaultValues.id)
         .select()
         .single();
 

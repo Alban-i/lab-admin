@@ -1,5 +1,6 @@
 import getArticle from '@/actions/get-article';
 import getArticleTags from '@/actions/get-article-tags';
+import getAuthors from '@/actions/get-authors';
 import getCategories from '@/actions/get-categories';
 import getTags from '@/actions/get-tags';
 import ArticleForm from './components/article-form';
@@ -11,11 +12,12 @@ const ArticlePage = async ({
 }) => {
   const { articleId } = await params;
 
-  const [article, categories, tags, articleTags] = await Promise.all([
+  const [article, categories, tags, articleTags, authors] = await Promise.all([
     getArticle(articleId),
     getCategories(),
     getTags(),
     getArticleTags(articleId),
+    getAuthors(),
   ]);
 
   if (article === 'error') {
@@ -29,6 +31,7 @@ const ArticlePage = async ({
         categories={categories}
         tags={tags}
         selectedTagIds={articleTags}
+        authors={authors}
       />
     </div>
   );

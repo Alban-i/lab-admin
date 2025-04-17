@@ -49,6 +49,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          is_featured: boolean | null
           published_at: string | null
           slug: string
           status: string
@@ -62,6 +63,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          is_featured?: boolean | null
           published_at?: string | null
           slug: string
           status: string
@@ -75,6 +77,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          is_featured?: boolean | null
           published_at?: string | null
           slug?: string
           status?: string
