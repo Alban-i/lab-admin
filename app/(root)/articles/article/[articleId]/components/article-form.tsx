@@ -42,6 +42,7 @@ import Editor from '@/components/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2 } from 'lucide-react';
+import ImageUpload from '@/components/image-upload';
 
 const initialData = {
   title: '',
@@ -54,6 +55,7 @@ const initialData = {
   id: undefined,
   published_at: null,
   is_featured: false,
+  image_url: '',
 } as const;
 
 const formSchema = z.object({
@@ -63,6 +65,7 @@ const formSchema = z.object({
   category_id: z.string().optional(),
   author_id: z.string().min(1, 'Author is required'),
   is_featured: z.boolean(),
+  image_url: z.string().optional(),
 });
 
 interface ArticleFormProps {
@@ -104,6 +107,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       category_id: defaultValues.category_id?.toString() ?? undefined,
       author_id: defaultValues.author_id?.toString() ?? undefined,
       is_featured: defaultValues.is_featured ?? false,
+      image_url: defaultValues.image_url ?? '',
     },
   });
 
@@ -124,6 +128,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         slug: values.slug,
         status,
         is_featured: values.is_featured,
+        image_url: values.image_url,
         published_at:
           status === 'published' &&
           defaultValues.status?.toLowerCase() !== 'published'
@@ -192,6 +197,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         category_id: data.category_id?.toString() ?? undefined,
         author_id: data.author_id?.toString() ?? undefined,
         is_featured: data.is_featured ?? false,
+        image_url: data.image_url ?? '',
       });
 
       toast.success(toastMessage);
@@ -487,6 +493,38 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                           placeholder="Article summary..."
                           className="min-h-[100px]"
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* COVER IMAGE */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Cover Image</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="image_url"
+                  render={({ field }) => (
+                    <FormItem className="border p-2 rounded-md">
+                      <FormLabel className="font-semibold ml-2">
+                        Cover Image
+                      </FormLabel>
+                      <FormDescription className="ml-2">
+                        1200 x 630
+                      </FormDescription>
+                      <FormControl>
+                        <ImageUpload
+                          disabled={loading}
+                          value={field.value ? [field.value] : []}
+                          onChange={(url: string) => field.onChange(url)}
+                          onRemove={() => field.onChange('')}
                         />
                       </FormControl>
                       <FormMessage />
