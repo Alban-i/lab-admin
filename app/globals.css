@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+.image-class {
+  border-radius: 10px !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 :root {
   --background: oklch(0.94 0 236.5);

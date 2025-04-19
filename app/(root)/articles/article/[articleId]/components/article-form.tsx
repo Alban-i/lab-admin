@@ -38,7 +38,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
-import Editor from '@/components/editor';
+import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2 } from 'lucide-react';
@@ -286,256 +286,264 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     <div className="p-4">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <fieldset disabled={loading} className="grid grid-cols-1 gap-2">
-            {/* HEADER */}
-            <Card>
-              <CardHeader className="grid grid-cols-[1fr_auto] items-center gap-4">
-                <CardTitle>
-                  {defaultValues.id ? defaultValues.title : 'New article'}
-                </CardTitle>
-                <div className="flex gap-2">
-                  {defaultValues.id && (
-                    <DeleteButton label="Delete Article" fn={onDelete} />
-                  )}
-                  <Button type="submit">{action}</Button>
-                </div>
-              </CardHeader>
-            </Card>
-
-            {/* DETAILS */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Article Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Article Title" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <FormControl>
-                        <Input placeholder="article-slug" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="">
-                  <FormLabel className="mb-2">Status</FormLabel>
-                  <TabToggle
-                    state={status}
-                    setState={(value) => setStatus(value as FormStatus)}
-                    picklist={[
-                      { value: 'draft', label: 'Draft' },
-                      { value: 'published', label: 'Published' },
-                      { value: 'archived', label: 'Archived' },
-                    ]}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="category_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl className="w-full">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem
-                              key={category.id}
-                              value={category.id.toString()}
-                            >
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="author_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                        Author
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl className="w-full">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an author" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {authors.map((author) => (
-                            <SelectItem key={author.id} value={author.id}>
-                              {author.username || author.email || author.id}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="is_featured"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0 col-span-2">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Feature this article</FormLabel>
-                        <FormDescription>
-                          Featured articles will be displayed prominently on the
-                          homepage
-                        </FormDescription>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* TAGS */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tags</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <Button
-                      key={tag.id}
-                      variant={
-                        selectedTags.includes(tag.id) ? 'default' : 'outline'
-                      }
-                      size="sm"
-                      className="rounded-full"
-                      type="button"
-                      onClick={() => toggleTag(tag.id)}
-                    >
-                      {tag.name}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* SUMMARY */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Summary</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={generateSummary}
-                    disabled={isGeneratingSummary}
-                  >
-                    {isGeneratingSummary ? (
-                      'Generating...'
-                    ) : (
-                      <>
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        Generate with AI
-                      </>
+          <fieldset
+            disabled={loading}
+            className="grid md:grid-cols-[2fr_1fr] gap-4"
+          >
+            {/* Left Column */}
+            <div className="space-y-4">
+              {/* HEADER */}
+              <Card>
+                <CardHeader className="grid grid-cols-[1fr_auto] items-center gap-4">
+                  <CardTitle>
+                    {defaultValues.id ? defaultValues.title : 'New article'}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    {defaultValues.id && (
+                      <DeleteButton label="Delete Article" fn={onDelete} />
                     )}
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  control={form.control}
-                  name="summary"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Article summary..."
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+                    <Button type="submit">{action}</Button>
+                  </div>
+                </CardHeader>
+              </Card>
 
-            {/* COVER IMAGE */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cover Image</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FormField
-                  control={form.control}
-                  name="image_url"
-                  render={({ field }) => (
-                    <FormItem className="border p-2 rounded-md">
-                      <FormLabel className="font-semibold ml-2">
-                        Cover Image
-                      </FormLabel>
-                      <FormDescription className="ml-2">
-                        1200 x 630
-                      </FormDescription>
-                      <FormControl>
-                        <ImageUpload
-                          disabled={loading}
-                          value={field.value ? [field.value] : []}
-                          onChange={(url: string) => field.onChange(url)}
-                          onRemove={() => field.onChange('')}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+              {/* DETAILS */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Article Details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Article Title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* CONTENT */}
-            <Card>
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <Input placeholder="article-slug" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="">
+                    <FormLabel className="mb-2">Status</FormLabel>
+                    <TabToggle
+                      state={status}
+                      setState={(value) => setStatus(value as FormStatus)}
+                      picklist={[
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'published', label: 'Published' },
+                        { value: 'archived', label: 'Archived' },
+                      ]}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.id.toString()}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="author_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                          Author
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an author" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {authors.map((author) => (
+                              <SelectItem key={author.id} value={author.id}>
+                                {author.username || author.email || author.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="is_featured"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Feature this article</FormLabel>
+                          <FormDescription>
+                            The featured article will be displayed on home page
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SUMMARY */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Summary</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={generateSummary}
+                      disabled={isGeneratingSummary}
+                    >
+                      {isGeneratingSummary ? (
+                        'Generating...'
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Generate with AI
+                        </>
+                      )}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="summary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Article summary..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-4">
+              {/* TAGS */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tags</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <Button
+                        key={tag.id}
+                        variant={
+                          selectedTags.includes(tag.id) ? 'default' : 'outline'
+                        }
+                        size="sm"
+                        className="rounded-full"
+                        type="button"
+                        onClick={() => toggleTag(tag.id)}
+                      >
+                        {tag.name}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* COVER IMAGE */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cover Image</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="image_url"
+                    render={({ field }) => (
+                      <FormItem className="border p-2 rounded-md">
+                        <FormLabel className="font-semibold ml-2">
+                          Cover Image
+                        </FormLabel>
+                        <FormDescription className="ml-2">
+                          1200 x 630
+                        </FormDescription>
+                        <FormControl>
+                          <ImageUpload
+                            disabled={loading}
+                            value={field.value ? [field.value] : []}
+                            onChange={(url: string) => field.onChange(url)}
+                            onRemove={() => field.onChange('')}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Full Width Content Card */}
+            <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>Content</CardTitle>
               </CardHeader>

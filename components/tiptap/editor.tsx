@@ -2,9 +2,18 @@
 
 import Highlight from '@tiptap/extension-highlight';
 import Typography from '@tiptap/extension-typography';
-import { EditorContent, useEditor, Node } from '@tiptap/react';
+import {
+  EditorContent,
+  useEditor,
+  Node,
+  NodeViewWrapper,
+  NodeViewContent,
+  NodeViewProps,
+  Editor as TiptapEditor,
+} from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
+import { mergeAttributes, nodeInputRule, CommandProps } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import CharacterCount from '@tiptap/extension-character-count';
 import Table from '@tiptap/extension-table';
@@ -13,9 +22,13 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextDirection } from 'tiptap-text-direction';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { EditorView } from '@tiptap/pm/view';
+import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes';
+import Document from '@tiptap/extension-document';
 
 import { CldUploadWidget } from 'next-cloudinary';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import {
   ImagePlus,
   Quote,
@@ -38,6 +51,7 @@ import {
   AlignLeft,
   AlignRight,
   Layout,
+  Asterisk,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -66,6 +80,20 @@ interface UploadResult {
 
 interface HTMLAttributes {
   [key: string]: string | number | boolean | undefined;
+}
+
+interface ImageNodeViewProps extends NodeViewProps {
+  updateAttributes: (attrs: {
+    alt?: string;
+    title?: string;
+    width?: number;
+    height?: number;
+    alignment?: string;
+  }) => void;
+  deleteNode: () => void;
+  selected: boolean;
+  getPos: () => number;
+  editor: TiptapEditor;
 }
 
 // Layout Extension
@@ -138,36 +166,344 @@ const LayoutColumn = Node.create({
   },
 });
 
+const ImageNodeView = ({
+  node,
+  updateAttributes,
+  deleteNode,
+  selected,
+  getPos,
+  editor,
+}: ImageNodeViewProps) => {
+  const [isResizing, setIsResizing] = useState(false);
+  const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
+  const [initialMousePos, setInitialMousePos] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    setIsResizing(true);
+    setInitialSize({
+      width: rect.width,
+      height: rect.height,
+    });
+    setInitialMousePos({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleResize = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing || !imageRef.current) return;
+
+      const deltaX = e.clientX - initialMousePos.x;
+      const deltaY = e.clientY - initialMousePos.y;
+      const aspectRatio = initialSize.height / initialSize.width;
+
+      const newWidth = Math.max(100, initialSize.width + deltaX);
+      const newHeight = Math.round(newWidth * aspectRatio);
+
+      updateAttributes({
+        width: newWidth,
+        height: newHeight,
+      });
+    },
+    [isResizing, initialMousePos, initialSize, updateAttributes]
+  );
+
+  const stopResize = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResize);
+      window.addEventListener('mouseup', stopResize);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleResize);
+      window.removeEventListener('mouseup', stopResize);
+    };
+  }, [isResizing, handleResize, stopResize]);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    // Store the current position and node data in the dataTransfer
+    const nodeData = {
+      pos: getPos(),
+      node: {
+        ...node.toJSON(),
+        attrs: {
+          ...node.attrs,
+          width: node.attrs.width,
+          height: node.attrs.height,
+          alignment: node.attrs.alignment,
+        },
+      },
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(nodeData));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  return (
+    <NodeViewWrapper className="relative">
+      <img
+        ref={imageRef}
+        src={node.attrs.src}
+        alt={node.attrs.alt || ''}
+        draggable={true}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        style={{
+          margin:
+            node.attrs.alignment === 'left'
+              ? '0 auto 0 0'
+              : node.attrs.alignment === 'right'
+              ? '0 0 0 auto'
+              : '0 auto',
+          display: 'block',
+          maxWidth: '100%',
+          width: node.attrs.width || 'auto',
+          height: node.attrs.height || 'auto',
+          opacity: isDragging ? 0.5 : 1,
+          cursor: 'move',
+        }}
+        className="rounded-lg shadow-md"
+      />
+      {selected && (
+        <>
+          <div
+            className="absolute top-2 left-2 flex gap-2 bg-black/50 p-2 rounded"
+            contentEditable={false}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                updateAttributes({ alignment: 'left' });
+              }}
+              className="p-1 text-white hover:bg-black/20 rounded cursor-pointer"
+              title="Align left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                updateAttributes({ alignment: 'center' });
+              }}
+              className="p-1 text-white hover:bg-black/20 rounded cursor-pointer"
+              title="Center"
+            >
+              <AlignLeft className="h-4 w-4 rotate-90" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                updateAttributes({ alignment: 'right' });
+              }}
+              className="p-1 text-white hover:bg-black/20 rounded cursor-pointer"
+              title="Align right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </button>
+          </div>
+          <div
+            className="absolute top-2 right-2 flex gap-2 bg-black/50 p-2 rounded"
+            contentEditable={false}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                const newAlt = window.prompt('Enter alt text:', node.attrs.alt);
+                if (newAlt !== null) {
+                  updateAttributes({ alt: newAlt });
+                }
+              }}
+              className="p-1 text-white text-xs font-semibold hover:bg-black/20 rounded cursor-pointer"
+              title="Edit alt text"
+            >
+              Alt
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                deleteNode();
+              }}
+              className="p-1 hover:bg-black/20 rounded cursor-pointer"
+              title="Delete image"
+            >
+              <Trash2 className="h-4 w-4 text-white" />
+            </button>
+          </div>
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 bg-black/50 cursor-se-resize"
+            contentEditable={false}
+            draggable={false}
+            onMouseDown={startResize}
+            title="Resize image"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="w-full h-full text-white p-0.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 3L14 10M21 7V3H17M10 14L3 21M7 21H3V17" />
+            </svg>
+          </div>
+        </>
+      )}
+    </NodeViewWrapper>
+  );
+};
+
+// Custom Image Extension
+const CustomImage = Image.extend({
+  name: 'customImage',
+
+  addOptions() {
+    return {
+      ...this.parent?.(),
+    };
+  },
+
+  addAttributes() {
+    const parentAttributes = this.parent?.() || {};
+
+    return {
+      ...parentAttributes,
+      width: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        },
+      },
+      height: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.height) return {};
+          return { height: attributes.height };
+        },
+      },
+      alt: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.alt) return {};
+          return { alt: attributes.alt };
+        },
+      },
+      title: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.title) return {};
+          return { title: attributes.title };
+        },
+      },
+      alignment: {
+        default: 'center',
+        renderHTML: (attributes) => {
+          const margin =
+            attributes.alignment === 'left'
+              ? '0 auto 0 0'
+              : attributes.alignment === 'right'
+              ? '0 0 0 auto'
+              : '0 auto';
+
+          return {
+            style: `display: block; margin: ${margin}`,
+          };
+        },
+      },
+    };
+  },
+
+  addCommands() {
+    const parentCommands = this.parent?.() || {};
+
+    return {
+      ...parentCommands,
+      setImage:
+        (options) =>
+        ({ commands }: CommandProps) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: options,
+          });
+        },
+      deleteImage:
+        () =>
+        ({ commands }: CommandProps) => {
+          return commands.deleteSelection();
+        },
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageNodeView);
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const { src, alt, title, width, height, alignment } = node.attrs;
+    const margin =
+      alignment === 'left'
+        ? '0 auto 0 0'
+        : alignment === 'right'
+        ? '0 0 0 auto'
+        : '0 auto';
+
+    return [
+      'img',
+      mergeAttributes(HTMLAttributes, {
+        src,
+        alt,
+        title,
+        width,
+        height,
+        class: 'rounded-lg shadow-md',
+        style: `display: block; margin: ${margin}; max-width: 100%; height: auto;`,
+      }),
+    ];
+  },
+});
+
 export default function Editor({ content = '', onChange }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        bulletList: {
-          keepMarks: true,
-          keepAttributes: false,
-          HTMLAttributes: {
-            class: 'list-disc',
-          },
-        },
-        orderedList: {
-          keepMarks: true,
-          keepAttributes: false,
-          HTMLAttributes: {
-            class: 'list-decimal',
-          },
-        },
+        document: false,
+      }),
+      Document.extend({
+        content: 'block+ footnotes?',
       }),
       Highlight,
       Typography,
       Link,
-      Image.configure({
+      CustomImage.configure({
+        inline: true,
         allowBase64: true,
-        HTMLAttributes: {
-          class: 'rounded-lg',
-        },
       }),
       CharacterCount,
       Table.configure({
@@ -185,6 +521,9 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       }),
       LayoutExtension,
       LayoutColumn,
+      Footnotes,
+      Footnote,
+      FootnoteReference,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -205,6 +544,45 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         }
         return false;
       },
+      handleDrop: (view: EditorView, event: DragEvent, slice, moved) => {
+        try {
+          const jsonData = event.dataTransfer?.getData('application/json');
+          if (!jsonData) return false;
+
+          event.preventDefault();
+
+          const { pos: sourcePos, node: sourceNodeData } = JSON.parse(jsonData);
+
+          // Get coordinates relative to the editor view
+          const coordinates = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+
+          if (!coordinates) return false;
+
+          const tr = view.state.tr;
+
+          // Delete the node from its original position
+          const sourcePosition = parseInt(sourcePos);
+          const sourceNode = view.state.doc.nodeAt(sourcePosition);
+
+          if (!sourceNode) return false;
+
+          // Delete old node and insert new one
+          tr.delete(sourcePosition, sourcePosition + sourceNode.nodeSize);
+          tr.insert(
+            coordinates.pos,
+            view.state.schema.nodes.customImage.create(sourceNodeData.attrs)
+          );
+
+          view.dispatch(tr);
+          return true;
+        } catch (error) {
+          console.error('Error handling image drop:', error);
+          return false;
+        }
+      },
     },
   });
 
@@ -219,7 +597,15 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         typeof result.info === 'object' &&
         result.info?.secure_url
       ) {
-        editor.chain().focus().setImage({ src: result.info.secure_url }).run();
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: result.info.secure_url,
+            alt: 'Uploaded image',
+            title: 'Click to edit image properties',
+          })
+          .run();
       }
     },
     [editor]
@@ -262,6 +648,12 @@ export default function Editor({ content = '', onChange }: EditorProps) {
     };
 
     editor.chain().focus().insertContent(layoutStructure).run();
+  }, [editor]);
+
+  const insertFootnote = useCallback(() => {
+    if (!editor) return;
+
+    editor.chain().focus().addFootnote().run();
   }, [editor]);
 
   if (!editor || !isMounted) {
@@ -397,13 +789,27 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           }}
         </CldUploadWidget>
         <Button
+          type="button"
           variant="outline"
           size="sm"
-          onClick={insertLayout}
+          onClick={(e) => {
+            e.preventDefault();
+            insertLayout();
+          }}
           title="Insert Layout"
         >
           <Layout className="h-4 w-4 mr-2" />
           Layout
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={insertFootnote}
+          title="Insert Footnote"
+        >
+          <Asterisk className="h-4 w-4 mr-2" />
+          Footnote
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -516,15 +922,17 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       </div>
       <EditorContent
         editor={editor}
-        className="border rounded-lg p-4 bg-white w-full"
+        className="border rounded-lg p-4 bg-white w-full tiptap [&_.footnotes]:mt-8 [&_.footnotes]:pt-8 [&_.footnotes]:border-t [&_.footnotes]:border-gray-200 [&_.footnotes]:list-decimal [&_.footnote-reference]:text-blue-600 [&_.footnote-reference]:align-super [&_.footnote-reference]:text-xs [&_.footnote-reference]:cursor-pointer [&_.footnote-reference]:ml-0.5"
       />
       <div className="mt-2 text-sm text-gray-500">
         {editor.storage.characterCount.characters()} characters
       </div>
       <div className="mt-4">
         <h3 className="text-sm font-medium mb-2">Raw HTML</h3>
-        <pre className="bg-gray-50 p-4 rounded-lg border text-sm font-mono overflow-x-auto">
-          {editor.getHTML()}
+        <pre className="bg-gray-100 p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md">
+          <code className="whitespace-pre-wrap">
+            {editor.getHTML().replace(/></g, '>\n<')}
+          </code>
         </pre>
       </div>
     </div>
