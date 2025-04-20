@@ -204,7 +204,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       toast.success(toastMessage);
 
       if (!defaultValues.id) {
-        router.push(`/articles/article/${data.id}`);
+        router.push(`/articles/${data.id}`);
       }
 
       router.refresh();
@@ -253,7 +253,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          path: `/articles/article/${slug}`,
+          path: `/articles/${slug}`,
         }),
       });
 

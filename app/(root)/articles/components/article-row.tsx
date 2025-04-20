@@ -16,7 +16,7 @@ const ArticleRow: React.FC<ArticleRowPops> = ({ article }) => {
       key={article.id}
       className="cursor-pointer"
       onClick={() => {
-        router.push(`/articles/article/${article.id}`);
+        router.push(`/articles/${article.id}`);
       }}
     >
       <TableCell className="font-medium">{article.title}</TableCell>

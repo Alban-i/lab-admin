@@ -25,7 +25,7 @@ const ArticlesClient: React.FC<ArticlesClientProps> = ({ articles }) => {
         <h2 className="text-2xl font-bold">Articles</h2>
         <div className="ml-auto flex items-center gap-2">
           {/* NEW ARTICLE */}
-          <Link href="/articles/article/new" passHref>
+          <Link href="/articles/new" passHref>
             <Button className="gap-1">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

@@ -100,7 +100,7 @@ export function DataTable<TData extends { id: string }, TValue>({
                   data-state={row.getIsSelected() && 'selected'}
                   className="cursor-pointer !hover:bg-red-300"
                   onClick={() => {
-                    router.push(`/articles/article/${row.original.id}`);
+                    router.push(`/articles/${row.original.id}`);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
