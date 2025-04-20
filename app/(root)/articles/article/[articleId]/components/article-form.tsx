@@ -87,6 +87,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isRevalidating, setIsRevalidating] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
@@ -242,6 +243,26 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   };
 
+  const triggerRevalidation = async () => {
+    try {
+      setIsRevalidating(true);
+      const response = await fetch('/api/revalidate', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to revalidate');
+      }
+
+      toast.success('Front-end website revalidated successfully');
+    } catch (error) {
+      toast.error('Failed to revalidate front-end website');
+      console.error('Error revalidating:', error);
+    } finally {
+      setIsRevalidating(false);
+    }
+  };
+
   const generateSummary = async () => {
     if (!content) {
       toast.error('Please add some content first');
@@ -300,7 +321,19 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   </CardTitle>
                   <div className="flex gap-2">
                     {defaultValues.id && (
-                      <DeleteButton label="Delete Article" fn={onDelete} />
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={triggerRevalidation}
+                          disabled={isRevalidating}
+                        >
+                          {isRevalidating
+                            ? 'Revalidating...'
+                            : 'Revalidate Front-end'}
+                        </Button>
+                        <DeleteButton label="Delete Article" fn={onDelete} />
+                      </>
                     )}
                     <Button type="submit">{action}</Button>
                   </div>
