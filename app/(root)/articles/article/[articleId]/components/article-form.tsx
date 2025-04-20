@@ -246,13 +246,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const triggerRevalidation = async () => {
     try {
       setIsRevalidating(true);
+      const slug = form.getValues('slug');
       const response = await fetch('/api/revalidate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          paths: [`/articles/article/${form.getValues('slug')}`, '/articles'],
+          path: `/articles/article/${slug}`,
         }),
       });
 

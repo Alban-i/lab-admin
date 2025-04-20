@@ -1,38 +1,61 @@
-import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    // Verify the secret token from the backend
-    const token = request.headers.get('x-revalidate-token');
+    const { path } = await request.json();
 
-    if (!token || token !== process.env.FRONTEND_REVALIDATE_TOKEN) {
+    if (!path) {
       return NextResponse.json(
-        { revalidated: false, message: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    const { paths } = await request.json();
-
-    if (!paths || !Array.isArray(paths) || paths.length === 0) {
-      return NextResponse.json(
-        { revalidated: false, message: 'At least one path is required' },
+        { revalidated: false, message: 'Path parameter is required' },
         { status: 400 }
       );
     }
 
-    // Revalidate all provided paths
-    paths.forEach((path) => {
-      revalidatePath(path);
+    // Get the frontend revalidation configuration
+    const frontendRevalidateUrl = process.env.FRONTEND_REVALIDATE_URL;
+    const frontendRevalidateToken = process.env.FRONTEND_REVALIDATE_TOKEN;
+
+    if (!frontendRevalidateUrl || !frontendRevalidateToken) {
+      return NextResponse.json(
+        {
+          revalidated: false,
+          message:
+            'Frontend revalidation configuration is missing. Please set FRONTEND_REVALIDATE_URL and FRONTEND_REVALIDATE_TOKEN environment variables.',
+        },
+        { status: 500 }
+      );
+    }
+
+    // Make the request to the frontend's revalidation endpoint
+    const response = await fetch(frontendRevalidateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-revalidate-token': frontendRevalidateToken,
+      },
+      body: JSON.stringify({ path }),
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return NextResponse.json(
+        {
+          revalidated: false,
+          message: `Frontend revalidation failed: ${error.message}`,
+          status: response.status,
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = await response.json();
 
     return NextResponse.json({
       revalidated: true,
-      now: Date.now(),
-      paths,
+      frontendResponse: result,
     });
   } catch (err) {
+    console.error('Revalidation error:', err);
     return NextResponse.json(
       { revalidated: false, message: (err as Error).message },
       { status: 500 }
