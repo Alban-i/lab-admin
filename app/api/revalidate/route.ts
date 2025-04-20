@@ -6,33 +6,31 @@ export async function POST(request: Request) {
     // Verify the secret token from the backend
     const token = request.headers.get('x-revalidate-token');
 
-    if (!token || token !== process.env.REVALIDATE_TOKEN) {
+    if (!token || token !== process.env.FRONTEND_REVALIDATE_TOKEN) {
       return NextResponse.json(
         { revalidated: false, message: 'Invalid token' },
         { status: 401 }
       );
     }
 
-    const { slug } = await request.json();
+    const { paths } = await request.json();
 
-    if (!slug) {
+    if (!paths || !Array.isArray(paths) || paths.length === 0) {
       return NextResponse.json(
-        { revalidated: false, message: 'Slug parameter is required' },
+        { revalidated: false, message: 'At least one path is required' },
         { status: 400 }
       );
     }
 
-    // Revalidate the specific article path
-    const articlePath = `/articles/article/${slug}`;
-    revalidatePath(articlePath);
-
-    // You might also want to revalidate the articles list page if you have one
-    revalidatePath('/articles');
+    // Revalidate all provided paths
+    paths.forEach((path) => {
+      revalidatePath(path);
+    });
 
     return NextResponse.json({
       revalidated: true,
       now: Date.now(),
-      paths: [articlePath, '/articles'],
+      paths,
     });
   } catch (err) {
     return NextResponse.json(
