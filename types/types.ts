@@ -13,6 +13,8 @@ export type Articles = Omit<
   is_published: boolean;
 };
 
+export type Posts = Database['public']['Tables']['posts']['Row'];
+
 export type Users = Database['public']['Tables']['profiles']['Row'];
 export type Profiles = Database['public']['Tables']['profiles']['Row'];
 

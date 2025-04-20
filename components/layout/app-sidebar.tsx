@@ -26,6 +26,7 @@ import {
   StickyNote,
   TableOfContents,
   Tag,
+  Twitter,
   University,
   UserRoundPen,
   Users,
@@ -77,6 +78,11 @@ const navMainData = [
         title: 'Articles',
         icon: StickyNote,
         url: '/articles',
+      },
+      {
+        title: 'Posts',
+        icon: Twitter,
+        url: '/posts',
       },
       {
         title: 'Categories',

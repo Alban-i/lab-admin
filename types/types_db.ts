@@ -42,6 +42,32 @@ export type Database = {
           },
         ]
       }
+      article_view_tracking: {
+        Row: {
+          article_id: string
+          ip_address: string
+          viewed_at: string
+        }
+        Insert: {
+          article_id: string
+          ip_address: string
+          viewed_at?: string
+        }
+        Update: {
+          article_id?: string
+          ip_address?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_view_tracking_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           author_id: string | null
@@ -57,6 +83,7 @@ export type Database = {
           summary: string
           title: string
           updated_at: string | null
+          views: number
         }
         Insert: {
           author_id?: string | null
@@ -72,6 +99,7 @@ export type Database = {
           summary: string
           title: string
           updated_at?: string | null
+          views?: number
         }
         Update: {
           author_id?: string | null
@@ -87,6 +115,7 @@ export type Database = {
           summary?: string
           title?: string
           updated_at?: string | null
+          views?: number
         }
         Relationships: [
           {
@@ -162,6 +191,87 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      maintenance_logs: {
+        Row: {
+          executed_at: string | null
+          id: string
+          operation: string
+          rows_affected: number | null
+        }
+        Insert: {
+          executed_at?: string | null
+          id?: string
+          operation: string
+          rows_affected?: number | null
+        }
+        Update: {
+          executed_at?: string | null
+          id?: string
+          operation?: string
+          rows_affected?: number | null
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          author_id: string | null
+          category_id: number | null
+          content: string
+          created_at: string | null
+          id: number
+          image_url: string | null
+          slug: string
+          source: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category_id?: number | null
+          content: string
+          created_at?: string | null
+          id?: number
+          image_url?: string | null
+          slug: string
+          source?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category_id?: number | null
+          content?: string
+          created_at?: string | null
+          id?: number
+          image_url?: string | null
+          slug?: string
+          source?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -260,6 +370,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_view_tracking: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      increment_article_views: {
+        Args: { article_slug: string; viewer_ip: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
