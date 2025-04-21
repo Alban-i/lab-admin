@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { useSelectedLayoutSegment } from 'next/navigation';
+import Link from 'next/link';
 
 export function NavMain({
   items,
@@ -47,10 +48,10 @@ export function NavMain({
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
+                <Link href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
               {item.items?.length ? (
                 <>
@@ -71,10 +72,10 @@ export function NavMain({
                                 segment ? subItem.url.includes(segment) : false
                               }
                             >
-                              <a href={subItem.url}>
+                              <Link href={subItem.url}>
                                 {subItem.icon && <subItem.icon />}
                                 <span>{subItem.title}</span>
-                              </a>
+                              </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         );

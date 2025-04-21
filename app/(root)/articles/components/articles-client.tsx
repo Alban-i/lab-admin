@@ -6,7 +6,7 @@ import { Articles } from '@/types/types';
 import Link from 'next/link';
 import { DataTable } from './data-table';
 import { columns } from './columns';
-
+import { RevalidateButton } from '@/components/revalidate-button';
 interface ArticlesClientProps {
   articles: Articles[];
 }
@@ -24,6 +24,8 @@ const ArticlesClient: React.FC<ArticlesClientProps> = ({ articles }) => {
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold">Articles</h2>
         <div className="ml-auto flex items-center gap-2">
+          <RevalidateButton path="/articles" label="Revalidate Articles Page" />
+
           {/* NEW ARTICLE */}
           <Link href="/articles/new" passHref>
             <Button className="gap-1">

@@ -29,7 +29,7 @@ const IndividualsClient: React.FC<IndividualsClientProps> = ({
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold">Individuals</h2>
         <div className="ml-auto flex items-center gap-2">
-          <Button onClick={() => router.push('/individuals/individual/new')}>
+          <Button onClick={() => router.push('/individuals/new')}>
             Add New Individual
           </Button>
         </div>

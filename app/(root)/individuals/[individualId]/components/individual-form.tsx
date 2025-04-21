@@ -76,7 +76,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
       toast.success(individual ? 'Individual updated.' : 'Individual created.');
 
       if (!individual?.id) {
-        router.push(`/individuals/individual/${data.id}`);
+        router.push(`/individuals/${data.id}`);
       }
 
       router.refresh();

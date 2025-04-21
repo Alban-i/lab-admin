@@ -41,10 +41,7 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold">Tags</h2>
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={() => router.push('/tags/tag/new')}
-            className="gap-1"
-          >
+          <Button onClick={() => router.push('/tags/new')} className="gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
               New
@@ -82,7 +79,7 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
                 <TableRow
                   key={tag.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/tags/tag/${tag.id}`)}
+                  onClick={() => router.push(`/tags/${tag.id}`)}
                 >
                   <TableCell>{tag.name}</TableCell>
                   <TableCell>

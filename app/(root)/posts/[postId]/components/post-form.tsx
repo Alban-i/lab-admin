@@ -37,6 +37,7 @@ import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/image-upload';
+import { RevalidateButton } from '@/components/revalidate-button';
 
 const initialData: Omit<Posts, 'id'> & { id: null } = {
   id: null,
@@ -147,7 +148,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
         toast.success('Post created successfully');
         // Redirect to the new post's edit page
         if (data) {
-          router.push(`/posts/post/${data.id}`);
+          router.push(`/posts/${data.id}`);
           return;
         }
       }
@@ -213,6 +214,12 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
                     {defaultValues.id && (
                       <DeleteButton label="Delete Post" fn={onDelete} />
                     )}
+
+                    <RevalidateButton
+                      path={`/posts/${defaultValues.id}`}
+                      label="Revalidate Post Page"
+                    />
+
                     <Button type="submit">{action}</Button>
                   </div>
                 </CardHeader>

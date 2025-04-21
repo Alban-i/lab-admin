@@ -98,7 +98,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category }) => {
         }
 
         if (data) {
-          router.push(`/categories/category/${data.id}`);
+          router.push(`/categories/${data.id}`);
         }
       }
 

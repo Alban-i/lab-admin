@@ -88,7 +88,7 @@ const TagForm: React.FC<TagFormProps> = ({ tag }) => {
         }
 
         if (data) {
-          router.push(`/tags/tag/${data.id}`);
+          router.push(`/tags/${data.id}`);
         }
       }
 

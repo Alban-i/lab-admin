@@ -48,7 +48,7 @@ const CategoriesClient: React.FC<CategoriesClientProps> = ({ categories }) => {
         <h2 className="text-2xl font-bold">Categories</h2>
         <div className="ml-auto flex items-center gap-2">
           <Button
-            onClick={() => router.push('/categories/category/new')}
+            onClick={() => router.push('/categories/new')}
             className="gap-1"
           >
             <PlusCircle className="h-3.5 w-3.5" />
@@ -89,9 +89,7 @@ const CategoriesClient: React.FC<CategoriesClientProps> = ({ categories }) => {
                 <TableRow
                   key={category.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() =>
-                    router.push(`/categories/category/${category.id}`)
-                  }
+                  onClick={() => router.push(`/categories/${category.id}`)}
                 >
                   <TableCell>{category.name}</TableCell>
                   <TableCell>{category.description}</TableCell>

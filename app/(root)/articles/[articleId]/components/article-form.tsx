@@ -43,6 +43,7 @@ import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2 } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
+import { RevalidateButton } from '@/components/revalidate-button';
 
 const initialData = {
   title: '',
@@ -87,7 +88,6 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
   const [loading, setLoading] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [isRevalidating, setIsRevalidating] = useState(false);
   const [selectedTags, setSelectedTags] = useState<number[]>(selectedTagIds);
   type FormStatus = 'draft' | 'published' | 'archived';
   const [status, setStatus] = useState<FormStatus>(
@@ -243,33 +243,6 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     }
   };
 
-  const triggerRevalidation = async () => {
-    try {
-      setIsRevalidating(true);
-      const slug = form.getValues('slug');
-      const response = await fetch('/api/revalidate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          path: `/articles/${slug}`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to revalidate');
-      }
-
-      toast.success('Front-end website revalidated successfully');
-    } catch (error) {
-      toast.error('Failed to revalidate front-end website');
-      console.error('Error revalidating:', error);
-    } finally {
-      setIsRevalidating(false);
-    }
-  };
-
   const generateSummary = async () => {
     if (!content) {
       toast.error('Please add some content first');
@@ -329,16 +302,10 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   <div className="flex gap-2">
                     {defaultValues.id && (
                       <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={triggerRevalidation}
-                          disabled={isRevalidating}
-                        >
-                          {isRevalidating
-                            ? 'Revalidating...'
-                            : 'Revalidate Front-end'}
-                        </Button>
+                        <RevalidateButton
+                          path={`/articles/${form.getValues('slug')}`}
+                          label="Revalidate Article Page"
+                        />
                         <DeleteButton label="Delete Article" fn={onDelete} />
                       </>
                     )}
