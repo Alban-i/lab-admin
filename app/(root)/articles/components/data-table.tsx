@@ -97,13 +97,16 @@ export function DataTable<TData extends { id: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="cursor-pointer !hover:bg-red-300"
+                  className="group cursor-pointer hover:bg-muted/50"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="bg-background p-0">
+                    <TableCell
+                      key={cell.id}
+                      className="bg-background p-0 group-hover:bg-muted/50"
+                    >
                       <Link
                         href={`/articles/${row.original.id}`}
-                        className="block h-full w-full p-2"
+                        className="block p-2"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

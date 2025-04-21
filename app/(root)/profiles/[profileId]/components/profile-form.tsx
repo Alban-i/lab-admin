@@ -138,7 +138,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, roles }) => {
       toast.success(toastMessage);
 
       if (!defaultValues.id) {
-        router.push(`/profiles/profile/${updatedProfile.id}`);
+        router.push(`/profiles/${updatedProfile.id}`);
       }
 
       form.reset();

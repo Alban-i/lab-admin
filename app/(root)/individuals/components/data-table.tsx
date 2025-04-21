@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useState } from 'react';
+import Link from 'next/link';
 
 import { DataTableToolbar } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
@@ -98,17 +99,22 @@ export function DataTable<TData extends { id: number }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="cursor-pointer hover:bg-secondary/50"
-                  onClick={() => {
-                    router.push(`/individuals/${row.original.id}`);
-                  }}
+                  className="group cursor-pointer hover:bg-muted/50"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="bg-background">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                    <TableCell
+                      key={cell.id}
+                      className="bg-background p-0 group-hover:bg-muted/50"
+                    >
+                      <Link
+                        href={`/individuals/${row.original.id}`}
+                        className="block p-2"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </Link>
                     </TableCell>
                   ))}
                 </TableRow>
