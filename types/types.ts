@@ -23,3 +23,5 @@ export type ProfilesWithRoles = Profiles & {
 };
 
 export type Tags = Database['public']['Tables']['tags']['Row'];
+
+export type Tasks = Database['public']['Tables']['tasks']['Row'];

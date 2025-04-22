@@ -41,10 +41,7 @@ const RolesClient: React.FC<RolesClientProps> = ({ roles }) => {
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold">Roles</h2>
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={() => router.push('/roles/role/new')}
-            className="gap-1"
-          >
+          <Button onClick={() => router.push('/roles/new')} className="gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
               New
@@ -84,7 +81,7 @@ const RolesClient: React.FC<RolesClientProps> = ({ roles }) => {
                 <TableRow
                   key={role.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/roles/role/${role.id}`)}
+                  onClick={() => router.push(`/roles/${role.id}`)}
                 >
                   <TableCell>{role.label}</TableCell>
                   <TableCell>{role.value}</TableCell>

@@ -96,7 +96,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ role }) => {
         }
 
         if (data) {
-          router.push(`/roles/role/${data.id}`);
+          router.push(`/roles/${data.id}`);
         }
       }
 

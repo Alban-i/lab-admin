@@ -1,0 +1,54 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# shadcn/ui Component Usage Rule
+
+## Rule Description
+This project uses shadcn/ui components as the primary UI component library. Standard HTML elements should be replaced with their shadcn/ui equivalents whenever available.
+
+## Component Mapping
+Below is a mapping of standard HTML elements to their shadcn/ui counterparts:
+
+- `<input>` → `<Input>` from "@/components/ui/input"
+- `<button>` → `<Button>` from "@/components/ui/button"
+- `<select>` → `<Select>` from "@/components/ui/select"
+- `<textarea>` → `<Textarea>` from "@/components/ui/textarea"
+- `<checkbox>` → `<Checkbox>` from "@/components/ui/checkbox"
+- `<radio>` → `<RadioGroup>` from "@/components/ui/radio-group"
+- `<dialog>` → `<Dialog>` from "@/components/ui/dialog"
+- `<form>` → `<Form>` from "@/components/ui/form"
+- `<table>` → `<Table>` from "@/components/ui/table"
+- `<card>` → `<Card>` from "@/components/ui/card"
+
+## Implementation Guidelines
+1. Always import shadcn/ui components from the local components directory (`@/components/ui/`)
+2. Use the shadcn/ui component variants and properties for styling instead of custom CSS where possible
+3. Maintain consistency by using shadcn/ui's design system tokens
+4. Leverage shadcn/ui's built-in accessibility features
+
+## Examples
+
+```tsx
+// ❌ Don't use standard HTML elements
+<input type="text" className="..." />
+<button className="...">Click me</button>
+
+// ✅ Use shadcn/ui components instead
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+<Input placeholder="Enter text" />
+<Button>Click me</Button>
+```
+
+## Benefits
+- Consistent design language across the application
+- Built-in accessibility features
+- Type-safe components with TypeScript
+- Customizable themes and styling
+- Modern, clean UI appearance
+
+## Note
+If a specific shadcn/ui component doesn't exist for your use case, create a custom component that follows shadcn/ui's design principles and tokens.

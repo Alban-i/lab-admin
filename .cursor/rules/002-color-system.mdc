@@ -1,0 +1,113 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Color Usage Rule
+
+## Rule Description
+This project uses CSS variables defined in `global.css` for consistent color theming. Direct color codes (hex, rgb, hsl, oklch) and Tailwind color classes should be avoided in favor of semantic CSS variables.
+
+## Color Variable Usage
+
+### Basic Usage
+```tsx
+// ❌ Don't use Tailwind color classes
+<div className="bg-blue-600">
+<div className="text-gray-700">
+
+// ❌ Don't use hardcoded colors
+<div style={{ backgroundColor: '#2563eb' }}>
+<div style={{ color: 'rgb(55, 65, 81)' }}>
+
+// ✅ Use semantic CSS variables
+<div style={{ backgroundColor: 'var(--primary)' }}>
+<div style={{ color: 'var(--foreground)' }}>
+```
+
+## Available Semantic Variables
+
+### Core Colors
+- `--background` - Main background color
+- `--foreground` - Primary text color
+- `--primary` - Primary brand color
+- `--primary-foreground` - Text on primary color
+- `--secondary` - Secondary UI elements
+- `--secondary-foreground` - Text on secondary color
+- `--muted` - Muted/subtle backgrounds
+- `--muted-foreground` - Muted text
+- `--accent` - Accent UI elements
+- `--accent-foreground` - Text on accent color
+- `--destructive` - Error/danger indicators
+- `--destructive-foreground` - Text on destructive color
+
+### UI Elements
+- `--card` - Card backgrounds
+- `--card-foreground` - Text in cards
+- `--popover` - Popover backgrounds
+- `--popover-foreground` - Text in popovers
+- `--border` - Border colors
+- `--input` - Input element borders
+- `--ring` - Focus rings
+
+### Sidebar Specific
+- `--sidebar` - Sidebar background
+- `--sidebar-foreground` - Sidebar text
+- `--sidebar-primary` - Primary sidebar elements
+- `--sidebar-primary-foreground` - Text on primary sidebar elements
+- `--sidebar-accent` - Accent sidebar elements
+- `--sidebar-accent-foreground` - Text on accent sidebar elements
+- `--sidebar-border` - Sidebar borders
+- `--sidebar-ring` - Sidebar focus rings
+
+### Chart Colors
+- `--chart-1` through `--chart-5` - Chart color palette
+
+## Usage Examples
+
+### Components
+```tsx
+// ✅ Button example
+const Button = styled.button`
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--border);
+`;
+
+// ✅ Card example
+const Card = styled.div`
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+`;
+
+// ✅ Input example
+const Input = styled.input`
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  &:focus {
+    outline: 2px solid var(--ring);
+  }
+`;
+```
+
+### Dark Mode Support
+The variables automatically update in dark mode - no additional work needed:
+```tsx
+// ✅ Works in both light and dark mode
+const Text = styled.p`
+  color: var(--foreground);
+`;
+```
+
+## Benefits
+- Consistent color usage across the application
+- Automatic dark mode support
+- Semantic meaning through variable names
+- Single source of truth in `global.css`
+- Easier theme customization
+- Better maintainability
+
+## Note
+If you need a new color, add it to the CSS variables in `global.css` rather than using direct color values or Tailwind classes. This ensures consistency and makes future updates easier to manage.

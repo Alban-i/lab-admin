@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+ Rule Name: 003-supabase-mcp
+Description: 
+# Supabase MCP Configuration Rule
+
+## Rule Description
+This project uses Supabase as its backend service. When making MCP (Managed Cloud Platform) queries, use these default IDs for the project and organization.
+
+## Default Configuration Values
+- Project ID: `oonuyqodigregozwqjsn`
+- Organization ID: `fzimppmnqbqvaobsxpda`
+
+## Usage Guidelines
+
+### Making MCP Queries
+When using MCP tools that require project or organization IDs, use these default values unless specifically instructed otherwise.
+
+```typescript
+// ✅ Example MCP query using default project ID
+const projectDetails = await mcp_supabase_get_project({
+  id: 'oonuyqodigregozwqjsn'
+});
+
+// ✅ Example MCP query using default organization ID
+const orgCost = await mcp_supabase_get_cost({
+  organization_id: 'fzimppmnqbqvaobsxpda',
+  type: 'project'
+});
+```
+
+## Benefits
+- Consistent project and organization identification
+- Prevents accidental operations on wrong projects
+- Streamlines MCP operations
+
+## Note
+Always verify these IDs match your intended target before performing destructive operations or creating new resources.
