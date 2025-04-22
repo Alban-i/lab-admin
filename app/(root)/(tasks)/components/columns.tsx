@@ -1,30 +1,14 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { DataTableColumnHeader } from './data-table-column-header';
-import { Profiles, Tasks } from '@/types/types';
+import { Tasks } from '@/types/types';
 import { format } from 'date-fns';
-import { useProfiles } from '@/hooks/use-profiles';
+import { DataTableColumnHeader } from './data-table-column-header';
 
 export type TasksInDataTable = Tasks;
 
 export type ExtendedColumnDef<T> = ColumnDef<T> & {
   label?: string;
-};
-
-const getOwnerName = (owner_id: string | null, profiles: Profiles[]) => {
-  const owner = profiles.find((profile) => profile.id === owner_id);
-  return (
-    <div className="px-2 text-right">{owner?.full_name || 'Unassigned'}</div>
-  );
-};
-
-// Wrapper component to use hooks
-const OwnerCell = ({ ownerId }: { ownerId: string | null }) => {
-  const profiles = useProfiles(
-    (state: { profiles: Profiles[] }) => state.profiles
-  );
-  return getOwnerName(ownerId, profiles);
 };
 
 export const columns: ExtendedColumnDef<Tasks>[] = [
@@ -75,6 +59,12 @@ export const columns: ExtendedColumnDef<Tasks>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Owner" />
     ),
-    cell: ({ row }) => <OwnerCell ownerId={row.original.owner_id} />,
+    cell: ({ row }) => {
+      return (
+        <div className="px-2 text-right">
+          {row.original.owner_id?.full_name || 'Unassigned'}
+        </div>
+      );
+    },
   },
 ];

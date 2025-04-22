@@ -53,10 +53,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Toggle } from '@/components/ui/toggle';
 import { createClient } from '@/providers/supabase/client';
-import { CustomAudio } from './custom-audio';
-import CustomImage from './custom-image';
-import { PostReference } from './post-reference';
-import { PostSelector } from './post-selector-dialog';
+import { CustomAudio } from './audio/custom-audio';
+import CustomImage from './image/custom-image';
+// import { PostReference } from './post/static-post-reference';
+// import { PostSelector } from './post/static-post-selector-dialog';
+import { DynamicPostReference } from './post/dynamic-post-reference';
+import { DynamicPostSelectorDialog } from './post/dynamic-post-selector-dialog';
 
 interface EditorProps {
   content?: string;
@@ -216,7 +218,8 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       Footnotes,
       Footnote,
       FootnoteReference,
-      PostReference,
+      // PostReference,
+      DynamicPostReference,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -535,7 +538,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         >
           Audio
         </Button>
-        <PostSelector
+        {/* <PostSelector
           onSelect={(post) => {
             if (editor) {
               editor
@@ -548,6 +551,22 @@ export default function Editor({ content = '', onChange }: EditorProps) {
                     title: post.title,
                     content: post.content,
                     imageUrl: post.image_url,
+                  },
+                })
+                .run();
+            }
+          }}
+        /> */}
+        <DynamicPostSelectorDialog
+          onSelect={(postId) => {
+            if (editor) {
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'dynamicPostReference',
+                  attrs: {
+                    postId,
                   },
                 })
                 .run();

@@ -27,22 +27,23 @@ import { useProfiles } from '@/hooks/use-profiles';
 import { DataTableToolbar } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
 import TaskDialog from './task-dialog';
-import { Tasks } from '@/types/types';
+import { Tasks, ProfilesWithRoles } from '@/types/types';
 
 interface DataTableProps<TData extends { id: string }, TValue> {
-  columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  columns: ColumnDef<TData, TValue>[];
+  profiles: ProfilesWithRoles[];
 }
 
 export function DataTable<TData extends Tasks, TValue>({
-  columns,
   data,
+  columns,
+  profiles,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [selectedTask, setSelectedTask] = useState<Tasks | null>(null);
-  const profiles = useProfiles((state) => state.profiles);
 
   const table = useReactTable({
     data,

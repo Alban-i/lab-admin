@@ -5,7 +5,7 @@ const getTasks = async (): Promise<Tasks[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('tasks')
-    .select(`*`)
+    .select('*, owner_id(id, full_name)')
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -24,4 +24,11 @@ export type ProfilesWithRoles = Profiles & {
 
 export type Tags = Database['public']['Tables']['tags']['Row'];
 
-export type Tasks = Database['public']['Tables']['tasks']['Row'];
+export type Tasks = Omit<
+  Database['public']['Tables']['tasks']['Row'],
+  'owner_id'
+> & {
+  owner_id: null | {
+    full_name: string;
+  };
+};
