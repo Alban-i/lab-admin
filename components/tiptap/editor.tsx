@@ -15,6 +15,7 @@ import { EditorContent, Node, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Footnote, FootnoteReference, Footnotes } from 'tiptap-footnotes';
 import { TextDirection } from 'tiptap-text-direction';
+import QuoteWithSource from './quote/quote-with-source';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -220,6 +221,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       FootnoteReference,
       // PostReference,
       DynamicPostReference,
+      QuoteWithSource,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -482,6 +484,33 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         >
           <Quote className="h-4 w-4" />
         </Toggle>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (!editor) return;
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'quoteWithSource',
+                attrs: { sourceLabel: '', sourceUrl: '' },
+                content: [
+                  {
+                    type: 'paragraph',
+                    // content: [{ type: 'text', text: 'Type your quote...' }],
+                  },
+                ],
+              })
+              .run();
+            editor.commands.focus();
+          }}
+          title="Quote with Source"
+        >
+          <Quote className="h-4 w-4 mr-2" />
+          Quote + Source
+        </Button>
         <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
           {({ open }) => {
             const onClick = () => {

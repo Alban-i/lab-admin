@@ -132,7 +132,7 @@ const DynamicPostReferenceComponent = ({
         )}
         <Card
           data-active={selected}
-          className="ring-offset-2 ring-ring data-[active=true]:ring-2"
+          className="pt-0 ring-offset-2 ring-ring data-[active=true]:ring-2"
         >
           {post.image_url && (
             <div className="relative w-full h-48 overflow-hidden rounded-t-lg">

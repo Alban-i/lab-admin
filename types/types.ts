@@ -29,6 +29,7 @@ export type Tasks = Omit<
   'owner_id'
 > & {
   owner_id: null | {
+    id: string;
     full_name: string;
   };
 };

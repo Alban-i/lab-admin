@@ -39,7 +39,6 @@ export function NavMain({
 }) {
   const segment = useSelectedLayoutSegment();
 
-  console.log(segment);
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Content</SidebarGroupLabel>

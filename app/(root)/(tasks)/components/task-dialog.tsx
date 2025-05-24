@@ -82,7 +82,7 @@ export default function TaskDialog({
     defaultValues: {
       title: task?.title ?? '',
       description: task?.description ?? '',
-      owner_id: task?.owner_id ?? '',
+      owner_id: task?.owner_id?.id ?? '',
       due_date: task?.due_date ? new Date(task?.due_date) : new Date(),
     },
   });
