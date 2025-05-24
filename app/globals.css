@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@font-face {
+  font-family: 'Uthman';
+  src: url('/fonts/Uthman.woff2') format('woff2'),
+    url('/fonts/Uthman.woff') format('woff'),
+    url('/fonts/Uthman.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .image-class {
   border-radius: 10px !important;
 }
@@ -40,9 +49,11 @@
   --sidebar-accent-foreground: oklch(0.38 0.14 265.52);
   --sidebar-border: oklch(0.93 0.01 264.53);
   --sidebar-ring: oklch(0.5 0.15 256.96);
+
   --font-sans: Open Sans, sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: Space Mono, monospace;
+
   --radius: 0.75rem;
   --shadow-2xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.08);
   --shadow-xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.08);
@@ -92,9 +103,11 @@
   --sidebar-accent-foreground: oklch(0.88 0.06 254.13);
   --sidebar-border: oklch(0.38 0.03 269.73);
   --sidebar-ring: oklch(0.5 0.15 256.96);
+
   --font-sans: Open Sans, sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: Space Mono, monospace;
+
   --radius: 0.75rem;
   --shadow-2xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.08);
   --shadow-xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.08);
@@ -148,6 +161,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
+  --font-uthman: 'Uthman', var(--font-arabic);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
