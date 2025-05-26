@@ -7,7 +7,7 @@ export interface AudioOptions {
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomAudio = Node.create<AudioOptions>({
+export const CustomAudioExtension = Node.create<AudioOptions>({
   name: 'audio',
   group: 'inline',
   inline: true,

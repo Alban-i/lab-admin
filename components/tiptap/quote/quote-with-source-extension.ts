@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import QuoteNodeView from './quote-node-view';
+import QuoteWithSourceNodeView from './quote-with-source-node-view';
 
 export interface QuoteWithSourceOptions {
   HTMLAttributes: Record<string, string>;
@@ -21,13 +21,12 @@ export interface QuoteWithSourceAttrs {
  *  • `draggable: true` and `selectable: false` keep the node movable via the
  *    handle but editable inside.
  */
-const QuoteWithSource = Node.create<
+const QuoteWithSourceExtension = Node.create<
   QuoteWithSourceOptions,
   QuoteWithSourceAttrs
 >({
   name: 'quoteWithSource',
   priority: 1000, // make sure we win over StarterKit's blockquote
-
   group: 'block',
   content: 'block+',
   defining: true,
@@ -54,37 +53,42 @@ const QuoteWithSource = Node.create<
         renderHTML: (attrs) =>
           attrs.sourceUrl ? { 'data-source-url': attrs.sourceUrl } : {},
       },
-      quoteType: {
-        default: 'regular', // can be 'regular', 'hadith', or 'quran'
-        parseHTML: (element) =>
-          element.getAttribute('data-quote-type') || 'regular',
+      direction: {
+        default: 'ltr',
+        parseHTML: (element) => element.getAttribute('data-direction') || 'ltr',
         renderHTML: (attrs) =>
-          attrs.quoteType && attrs.quoteType !== 'regular'
-            ? { 'data-quote-type': attrs.quoteType }
+          attrs.direction && attrs.direction !== 'ltr'
+            ? { 'data-direction': attrs.direction }
+            : attrs.direction === 'ltr'
+            ? { 'data-direction': 'ltr' }
             : {},
+      },
+      quoteType: {
+        default: 'quote-with-source',
+        parseHTML: () => 'quote-with-source',
+        renderHTML: () => ({ 'data-quote-type': 'quote-with-source' }),
       },
     };
   },
 
   /** Only accept blockquotes that actually contain our attributes */
   parseHTML() {
-    return [
-      { tag: 'blockquote[data-source-label]' },
-      { tag: 'blockquote[data-source-url]' },
-    ];
+    return [{ tag: 'blockquote[data-quote-type="quote-with-source"]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
       'blockquote',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-quote-type': 'quote-with-source',
+      }),
       0,
     ];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(QuoteNodeView);
+    return ReactNodeViewRenderer(QuoteWithSourceNodeView);
   },
 });
 
-export default QuoteWithSource;
+export default QuoteWithSourceExtension;

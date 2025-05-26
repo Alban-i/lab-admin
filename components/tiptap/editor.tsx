@@ -15,7 +15,7 @@ import { EditorContent, Node, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Footnote, FootnoteReference, Footnotes } from 'tiptap-footnotes';
 import { TextDirection } from 'tiptap-text-direction';
-import QuoteWithSource from './quote/quote-with-source';
+import QuoteWithSourceExtension from './quote/quote-with-source-extension';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -54,12 +54,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Toggle } from '@/components/ui/toggle';
 import { createClient } from '@/providers/supabase/client';
-import { CustomAudio } from './audio/custom-audio';
-import CustomImage from './image/custom-image';
+import { CustomAudioExtension } from './audio/custom-audio-extension';
+import CustomImageExtension from './image/custom-image-extension';
 // import { PostReference } from './post/static-post-reference';
 // import { PostSelector } from './post/static-post-selector-dialog';
 import { DynamicPostReference } from './post/dynamic-post-reference';
 import { DynamicPostSelectorDialog } from './post/dynamic-post-selector-dialog';
+import QuoteWithTranslationExtension from './quote/quote-with-translation-extension';
 
 interface EditorProps {
   content?: string;
@@ -195,11 +196,11 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       Highlight,
       Typography,
       Link,
-      CustomImage.configure({
+      CustomImageExtension.configure({
         inline: true,
         allowBase64: true,
       }),
-      CustomAudio,
+      CustomAudioExtension,
       CharacterCount,
       Table.configure({
         resizable: true,
@@ -221,7 +222,8 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       FootnoteReference,
       // PostReference,
       DynamicPostReference,
-      QuoteWithSource,
+      QuoteWithSourceExtension,
+      QuoteWithTranslationExtension,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -510,6 +512,33 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         >
           <Quote className="h-4 w-4 mr-2" />
           Quote + Source
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (!editor) return;
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'quoteWithTranslation',
+                attrs: {
+                  original: '',
+                  translation: '',
+                  sourceLabel: '',
+                  sourceUrl: '',
+                  autoOpen: true,
+                },
+              })
+              .run();
+            editor.commands.focus();
+          }}
+          title="Quote with Translation"
+        >
+          <span className="h-4 w-4 mr-2 font-bold">Q</span>
+          Quote + Translation
         </Button>
         <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
           {({ open }) => {

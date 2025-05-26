@@ -9,13 +9,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Quote as QuoteIcon } from 'lucide-react';
+import { Quote as QuoteIcon, ArrowLeftRight } from 'lucide-react';
 
 /**
  * Quote node-view with :
  *   • optional *source* (label + URL)
- *   • style switch (regular / hadith / Qur’an)
- *   • **drag handle** limited to the “⋮⋮” dots
+ *   • style switch (regular / hadith / Qur'an)
+ *   • **drag handle** limited to the "⋮⋮" dots
  *
  * Implementation notes
  * --------------------
@@ -24,16 +24,16 @@ import { Quote as QuoteIcon } from 'lucide-react';
  * • We prevent accidental drags from empty areas by cancelling `dragstart`
  *   unless the event originates from the element that bears
  *   `data-drag-handle`.
- * • To get rid of the default grey “ghost” icon the browser shows while
- *   dragging, we set an **empty 1×1 transparent drag image** on the handle’s
+ * • To get rid of the default grey "ghost" icon the browser shows while
+ *   dragging, we set an **empty 1×1 transparent drag image** on the handle's
  *   own `dragstart`.
  */
-const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
+const QuoteWithSourceNodeView = ({ node, updateAttributes }: NodeViewProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [label, setLabel] = useState(node.attrs.sourceLabel || '');
   const [url, setUrl] = useState(node.attrs.sourceUrl || '');
-  const [quoteType, setQuoteType] = useState<'regular' | 'hadith' | 'quran'>(
-    node.attrs.quoteType || 'regular'
+  const [direction, setDirection] = useState<'ltr' | 'rtl'>(
+    node.attrs.direction || 'ltr'
   );
 
   /* -------------------------------------------------- actions */
@@ -42,9 +42,10 @@ const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
     setDialogOpen(false);
   };
 
-  const handleTypeChange = (type: 'regular' | 'hadith' | 'quran') => {
-    setQuoteType(type);
-    updateAttributes({ quoteType: type });
+  const handleDirectionToggle = () => {
+    const newDir = direction === 'ltr' ? 'rtl' : 'ltr';
+    setDirection(newDir);
+    updateAttributes({ direction: newDir });
   };
 
   /* -------------------------------------------------- drag logic */
@@ -65,24 +66,16 @@ const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
   /* -------------------------------------------------- render */
   return (
     <NodeViewWrapper
-      onDragStart={cancelIfNotHandle} /* filter drag origin */
-      className={`relative group rounded border-l-4 shadow-sm p-0 ${
-        quoteType === 'quran' ? 'text-center' : ''
-      }`}
-      style={{
-        background: 'var(--muted)',
-        color: 'var(--foreground)',
-        borderLeftColor: quoteType === 'hadith' ? 'orange' : 'var(--primary)',
-        fontFamily: quoteType === 'quran' ? 'Amiri, serif' : undefined,
-      }}
+      onDragStart={cancelIfNotHandle}
+      className="relative group bg-muted text-foreground border-l-primary rounded border-l-4 shadow-sm p-0"
     >
       {/* DRAG HANDLE */}
       <span
         contentEditable={false}
         data-drag-handle
-        draggable="true" /* key: origin of valid drags */
-        onDragStart={hideGhostImage} /* remove default ghost icon */
-        className="absolute left-0 top-2 w-6 h-6 flex items-center justify-center cursor-grab select-none text-muted-foreground z-50"
+        draggable="true"
+        onDragStart={hideGhostImage}
+        className="absolute left-2 top-2 w-6 h-6 flex items-center justify-center cursor-grab select-none text-muted-foreground z-50"
       >
         ⋮⋮
       </span>
@@ -93,33 +86,15 @@ const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
         contentEditable={false}
       >
         <Button
-          variant={quoteType === 'hadith' ? 'default' : 'outline'}
+          variant="outline"
           size="sm"
-          onClick={() => handleTypeChange('hadith')}
-          aria-label="Set as Hadith"
           type="button"
+          onClick={handleDirectionToggle}
+          aria-label="Toggle text direction"
         >
-          H
+          <ArrowLeftRight className="w-4 h-4 mr-1" />
+          {direction === 'ltr' ? 'LTR' : 'RTL'}
         </Button>
-        <Button
-          variant={quoteType === 'quran' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleTypeChange('quran')}
-          aria-label="Set as Qur'an"
-          type="button"
-        >
-          Q
-        </Button>
-        <Button
-          variant={quoteType === 'regular' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => handleTypeChange('regular')}
-          aria-label="Set as Regular"
-          type="button"
-        >
-          R
-        </Button>
-
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" type="button">
@@ -150,7 +125,10 @@ const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
       </div>
 
       {/* BODY */}
-      <blockquote className="m-0 p-0 border-none bg-transparent">
+      <blockquote
+        className="m-0 p-0 border-none bg-transparent"
+        dir={direction}
+      >
         <NodeViewContent as="div" />
         {node.attrs.sourceLabel && (
           <div
@@ -177,13 +155,11 @@ const QuoteNodeView = ({ node, updateAttributes }: NodeViewProps) => {
           className="pointer-events-none select-none absolute top-1/2 right-6 -translate-y-1/2 opacity-10 text-[64px] font-bold"
           aria-hidden="true"
         >
-          {quoteType === 'regular' && <QuoteIcon className="w-16 h-16" />}
-          {quoteType === 'quran' && <span className="font-serif">Q</span>}
-          {quoteType === 'hadith' && <span className="font-serif">H</span>}
+          <QuoteIcon className="w-16 h-16" />
         </span>
       </blockquote>
     </NodeViewWrapper>
   );
 };
 
-export default QuoteNodeView;
+export default QuoteWithSourceNodeView;

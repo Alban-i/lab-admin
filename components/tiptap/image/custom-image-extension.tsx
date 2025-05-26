@@ -4,7 +4,7 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import { mergeAttributes, CommandProps } from '@tiptap/core';
 import ImageNodeView from './image-node-view';
 
-const CustomImage = Image.extend({
+const CustomImageExtension = Image.extend({
   name: 'customImage',
 
   addOptions() {
@@ -113,4 +113,4 @@ const CustomImage = Image.extend({
   },
 });
 
-export default CustomImage;
+export default CustomImageExtension;
