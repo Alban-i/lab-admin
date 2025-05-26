@@ -61,6 +61,14 @@ const CustomImageExtension = Image.extend({
           };
         },
       },
+      legend: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.legend) return {};
+          return { 'data-legend': attributes.legend };
+        },
+        parseHTML: (element) => element.getAttribute('data-legend') || null,
+      },
     };
   },
 
@@ -90,7 +98,7 @@ const CustomImageExtension = Image.extend({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const { src, alt, title, width, height, alignment } = node.attrs;
+    const { src, alt, title, width, height, alignment, legend } = node.attrs;
     const margin =
       alignment === 'left'
         ? '0 auto 0 0'
@@ -108,6 +116,7 @@ const CustomImageExtension = Image.extend({
         height,
         class: 'rounded-lg shadow-md',
         style: `display: block; margin: ${margin}; max-width: 100%; height: auto;`,
+        ...(legend ? { 'data-legend': legend } : {}),
       }),
     ];
   },

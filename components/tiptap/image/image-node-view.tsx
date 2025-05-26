@@ -7,6 +7,17 @@ import {
 } from '@tiptap/react';
 
 import { AlignCenter, AlignLeft, AlignRight, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface ImageNodeViewProps extends NodeViewProps {
   updateAttributes: (attrs: {
@@ -15,6 +26,7 @@ interface ImageNodeViewProps extends NodeViewProps {
     width?: number;
     height?: number;
     alignment?: string;
+    legend?: string;
   }) => void;
   deleteNode: () => void;
   selected: boolean;
@@ -35,6 +47,11 @@ const ImageNodeView = ({
   const [initialMousePos, setInitialMousePos] = useState({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isAltDialogOpen, setIsAltDialogOpen] = useState(false);
+  const [altInputValue, setAltInputValue] = useState(node.attrs.alt || '');
+  const [legendInputValue, setLegendInputValue] = useState(
+    node.attrs.legend || ''
+  );
 
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -135,6 +152,11 @@ const ImageNodeView = ({
         }}
         className="rounded-lg shadow-md"
       />
+      {node.attrs.legend && (
+        <legend className="block w-full text-center mt-2 text-[0.95em] italic text-muted-foreground">
+          {node.attrs.legend}
+        </legend>
+      )}
       {selected && (
         <>
           <div
@@ -183,20 +205,59 @@ const ImageNodeView = ({
             draggable={false}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                const newAlt = window.prompt('Enter alt text:', node.attrs.alt);
-                if (newAlt !== null) {
-                  updateAttributes({ alt: newAlt });
-                }
-              }}
-              className="p-1 text-white text-xs font-semibold hover:bg-black/20 rounded cursor-pointer"
-              title="Edit alt text"
-            >
-              Alt
-            </button>
+            <Dialog open={isAltDialogOpen} onOpenChange={setIsAltDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1 text-white text-xs font-semibold hover:bg-black/20 rounded cursor-pointer"
+                  title="Edit alt text"
+                  onClick={() => {
+                    setAltInputValue(node.attrs.alt || '');
+                    setLegendInputValue(node.attrs.legend || '');
+                  }}
+                >
+                  Alt
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Alt Text & Legend</DialogTitle>
+                </DialogHeader>
+
+                <Input
+                  value={altInputValue}
+                  onChange={(e) => setAltInputValue(e.target.value)}
+                  placeholder="Enter alt text"
+                  autoFocus
+                />
+                <Input
+                  value={legendInputValue}
+                  onChange={(e) => setLegendInputValue(e.target.value)}
+                  placeholder="Enter legend (optional)"
+                  className="mt-2"
+                />
+                <DialogFooter className="mt-4">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" className="mr-2">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      updateAttributes({
+                        alt: altInputValue,
+                        legend: legendInputValue,
+                      });
+                      setIsAltDialogOpen(false);
+                    }}
+                    className=""
+                  >
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <button
               type="button"
               onClick={(e) => {
