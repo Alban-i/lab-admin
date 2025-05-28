@@ -127,7 +127,11 @@ const ImageNodeView = ({
   };
 
   return (
-    <NodeViewWrapper className="relative">
+    <NodeViewWrapper
+      as="figure"
+      className="relative"
+      data-alignment={node.attrs.alignment || 'center'}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imageRef}
@@ -152,10 +156,16 @@ const ImageNodeView = ({
         }}
         className="rounded-lg shadow-md"
       />
-      {node.attrs.legend && (
-        <legend className="block w-full text-center mt-2 text-[0.95em] italic text-muted-foreground">
+      {/* Show legend only when selected and legend exists */}
+      {true && node.attrs.legend && (
+        <div
+          className="block w-full text-center mt-2 text-[0.95em] italic"
+          style={{ color: 'var(--muted-foreground)' }}
+          contentEditable={false}
+          draggable={false}
+        >
           {node.attrs.legend}
-        </legend>
+        </div>
       )}
       {selected && (
         <>

@@ -60,6 +60,19 @@ const CustomImageExtension = Image.extend({
             style: `display: block; margin: ${margin}`,
           };
         },
+        parseHTML: (element) => {
+          // Try to get from the parent <figure> if available
+          if (
+            element.parentElement &&
+            element.parentElement.tagName === 'FIGURE'
+          ) {
+            return (
+              element.parentElement.getAttribute('data-alignment') || 'center'
+            );
+          }
+          // fallback: try to get from the element itself
+          return element.getAttribute('data-alignment') || 'center';
+        },
       },
       legend: {
         default: null,
@@ -98,7 +111,7 @@ const CustomImageExtension = Image.extend({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const { src, alt, title, width, height, alignment, legend } = node.attrs;
+    const { src, alt, title, width, height, alignment } = node.attrs;
     const margin =
       alignment === 'left'
         ? '0 auto 0 0'
@@ -106,19 +119,18 @@ const CustomImageExtension = Image.extend({
         ? '0 0 0 auto'
         : '0 auto';
 
-    return [
-      'img',
-      mergeAttributes(HTMLAttributes, {
-        src,
-        alt,
-        title,
-        width,
-        height,
-        class: 'rounded-lg shadow-md',
-        style: `display: block; margin: ${margin}; max-width: 100%; height: auto;`,
-        ...(legend ? { 'data-legend': legend } : {}),
-      }),
-    ];
+    const imgAttrs = mergeAttributes(HTMLAttributes, {
+      src,
+      alt,
+      title,
+      width,
+      height,
+      class: 'rounded-lg shadow-md',
+      style: `display: block; margin: ${margin}; max-width: 100%; height: auto;`,
+      'data-alignment': alignment || 'center',
+    });
+
+    return ['img', imgAttrs];
   },
 });
 
