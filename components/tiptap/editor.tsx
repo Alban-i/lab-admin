@@ -61,6 +61,10 @@ import CustomImageExtension from './image/custom-image-extension';
 import { DynamicPostReference } from './post/dynamic-post-reference';
 import { DynamicPostSelectorDialog } from './post/dynamic-post-selector-dialog';
 import QuoteWithTranslationExtension from './quote/quote-with-translation-extension';
+import {
+  LayoutColumnExtension,
+  LayoutExtension,
+} from './layout/layout-extension';
 
 interface EditorProps {
   content?: string;
@@ -78,76 +82,6 @@ interface UploadResult {
 interface HTMLAttributes {
   [key: string]: string | number | boolean | undefined;
 }
-
-// Layout Extension
-const LayoutExtension = Node.create({
-  name: 'layout',
-  group: 'block',
-  content: 'layoutColumn+',
-  defining: true,
-
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-type="layout"]',
-      },
-    ];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return [
-      'div',
-      {
-        ...HTMLAttributes,
-        'data-type': 'layout',
-        class: 'flex flex-wrap gap-4',
-      },
-      0,
-    ];
-  },
-});
-
-const LayoutColumn = Node.create({
-  name: 'layoutColumn',
-  group: 'block',
-  content: 'block+',
-  defining: true,
-
-  addAttributes() {
-    return {
-      width: {
-        default: '50%',
-        parseHTML: (element) => element.getAttribute('data-width'),
-        renderHTML: (attributes) => {
-          return {
-            'data-width': attributes.width,
-            style: `width: ${attributes.width}`,
-          };
-        },
-      },
-    };
-  },
-
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-type="layoutColumn"]',
-      },
-    ];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return [
-      'div',
-      {
-        ...HTMLAttributes,
-        'data-type': 'layoutColumn',
-        class: 'flex-1 min-w-[200px]',
-      },
-      0,
-    ];
-  },
-});
 
 export default function Editor({ content = '', onChange }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
@@ -206,8 +140,12 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         resizable: true,
       }),
       TableRow,
-      TableHeader,
-      TableCell,
+      TableHeader.extend({
+        content: 'paragraph',
+      }),
+      TableCell.extend({
+        content: 'paragraph',
+      }),
       TextDirection.configure({
         types: ['paragraph', 'heading'],
         defaultDirection: 'ltr',
@@ -216,7 +154,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         placeholder: '',
       }),
       LayoutExtension,
-      LayoutColumn,
+      LayoutColumnExtension,
       Footnotes,
       Footnote,
       FootnoteReference,
@@ -341,7 +279,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       content: [
         {
           type: 'layoutColumn',
-          attrs: { width: '50%' },
+          // attrs: { width: '50%' },
           content: [
             {
               type: 'paragraph',
@@ -351,7 +289,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         },
         {
           type: 'layoutColumn',
-          attrs: { width: '50%' },
+          // attrs: { width: '50%' },
           content: [
             {
               type: 'paragraph',

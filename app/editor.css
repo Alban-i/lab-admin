@@ -157,16 +157,16 @@
   margin-bottom: 1rem; /* my-4 */
 }
 
-.ProseMirror [data-type='layoutColumn'] {
+/* .ProseMirror [data-type='layoutColumn'] {
   border-left-width: 2px;
   border-left-color: var(--color-border);
-  padding-left: 1rem; /* pl-4 */
+  padding-left: 1rem;
 }
 
 .ProseMirror [data-type='layoutColumn']:first-child {
-  border-left-width: 0; /* border-l-0 */
-  padding-left: 0; /* pl-0 */
-}
+  border-left-width: 0;
+  padding-left: 0;
+} */
 
 .dark .ProseMirror [data-type='layout'] {
   border-color: var(--color-border);
