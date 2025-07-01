@@ -59,19 +59,28 @@ export default function ResetPasswordForm() {
     const formData = new FormData();
     formData.append('password', values.password);
 
-    const response = await updatePassword(formData);
+    try {
+      const response = await updatePassword(formData);
 
-    if (response && !response.ok) {
+      if (response && !response.ok) {
+        setLoading(false);
+        return toast.error(response.message);
+      }
+
+      toast.success(
+        'Mot de passe mis à jour avec succès. Vous êtes maintenant connecté.'
+      );
+
+      // Small delay to let the user see the success message
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
+    } catch (error) {
       setLoading(false);
-      return toast.error(response.message);
+      toast.error(
+        'Une erreur est survenue lors de la mise à jour du mot de passe.'
+      );
     }
-
-    toast.success(
-      'Mot de passe mis à jour avec succès. Vous êtes maintenant connecté.'
-    );
-
-    // Redirect to dashboard after successful password reset
-    router.push('/');
   }
 
   return (

@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { createClient } from '@/providers/supabase/server';
 
 export async function updatePassword(formData: FormData) {
@@ -19,9 +18,10 @@ export async function updatePassword(formData: FormData) {
       return { ok: false, message: error.message };
     }
 
-    // Revalidate and redirect to dashboard
+    // Revalidate the layout to update auth state
     revalidatePath('/', 'layout');
-    redirect('/');
+
+    return { ok: true, message: 'Mot de passe mis à jour avec succès.' };
   } catch (err) {
     return { ok: false, status: 500, message: (err as Error).message };
   }
