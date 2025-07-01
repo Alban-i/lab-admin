@@ -92,7 +92,9 @@ const CategoriesClient: React.FC<CategoriesClientProps> = ({ categories }) => {
                   onClick={() => router.push(`/categories/${category.id}`)}
                 >
                   <TableCell>{category.name}</TableCell>
-                  <TableCell>{category.description}</TableCell>
+                  <TableCell className="max-w-md break-words whitespace-normal">
+                    {category.description}
+                  </TableCell>
                   <TableCell>
                     {category.created_at
                       ? new Date(category.created_at).toLocaleString('en-GB', {

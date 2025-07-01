@@ -25,16 +25,14 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface Individual {
   id: number;
-  first_name: string;
-  last_name: string;
+  name: string;
   description: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
 
 const formSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
+  name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
 });
 
@@ -49,8 +47,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: individual?.first_name ?? '',
-      last_name: individual?.last_name ?? '',
+      name: individual?.name ?? '',
       description: individual?.description ?? '',
     },
   });
@@ -60,8 +57,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
       const { data, error } = await supabase
         .from('individuals')
         .upsert({
-          first_name: values.first_name,
-          last_name: values.last_name,
+          name: values.name,
           description: values.description || null,
           ...(individual?.id && { id: individual.id }),
         })
@@ -116,9 +112,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
             <Card>
               <CardHeader className="grid grid-cols-[1fr_auto] items-center gap-4">
                 <CardTitle>
-                  {individual
-                    ? `${individual.first_name} ${individual.last_name}`
-                    : 'New Individual'}
+                  {individual ? individual.name : 'New Individual'}
                 </CardTitle>
                 <div className="flex gap-2">
                   {individual && (
@@ -136,15 +130,15 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
               <CardHeader>
                 <CardTitle>Individual Details</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
+              <CardContent className="grid grid-cols-1 gap-y-4">
                 <FormField
                   control={form.control}
-                  name="first_name"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="First Name" {...field} />
+                        <Input placeholder="Full Name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -153,37 +147,21 @@ const IndividualForm: React.FC<IndividualFormProps> = ({ individual }) => {
 
                 <FormField
                   control={form.control}
-                  name="last_name"
+                  name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="Last Name" {...field} />
+                        <Textarea
+                          placeholder="Description"
+                          className="resize-none"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                <div className="col-span-2">
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Description"
-                            className="resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </CardContent>
             </Card>
           </fieldset>

@@ -19,22 +19,10 @@ export function DataTableToolbar<TData>({
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Search by first name..."
-          value={
-            (table.getColumn('first_name')?.getFilterValue() as string) ?? ''
-          }
+          placeholder="Search by name..."
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
-            table.getColumn('first_name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm bg-background"
-        />
-        <Input
-          placeholder="Search by last name..."
-          value={
-            (table.getColumn('last_name')?.getFilterValue() as string) ?? ''
-          }
-          onChange={(event) =>
-            table.getColumn('last_name')?.setFilterValue(event.target.value)
+            table.getColumn('name')?.setFilterValue(event.target.value)
           }
           className="max-w-sm bg-background"
         />

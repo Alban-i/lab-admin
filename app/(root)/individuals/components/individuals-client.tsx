@@ -7,8 +7,7 @@ import { DataTable } from './data-table';
 
 interface Individual {
   id: number;
-  first_name: string;
-  last_name: string;
+  name: string;
   description: string | null;
   created_at: string | null;
   updated_at: string | null;

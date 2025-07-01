@@ -7,7 +7,7 @@ const IndividualsPage = async () => {
   const { data: individuals, error } = await supabase
     .from('individuals')
     .select('*')
-    .order('last_name', { ascending: true });
+    .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching individuals:', error);
