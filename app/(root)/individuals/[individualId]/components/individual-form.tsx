@@ -30,6 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
+import { RevalidateButton } from '@/components/revalidate-button';
 
 interface Individual {
   id: number;
@@ -141,7 +142,13 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                 </CardTitle>
                 <div className="flex gap-2">
                   {individual && (
-                    <DeleteButton label="Delete Individual" fn={onDelete} />
+                    <>
+                      <RevalidateButton
+                        path={`/individuals/${individual.id}`}
+                        label="Revalidate Individual Page"
+                      />
+                      <DeleteButton label="Delete Individual" fn={onDelete} />
+                    </>
                   )}
                   <Button type="submit">
                     {individual ? 'Save changes' : 'Create'}
