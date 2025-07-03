@@ -94,10 +94,23 @@ const navMainData = [
         icon: Hash,
         url: '/tags',
       },
+    ],
+  },
+  {
+    title: 'People & Types',
+    url: '#',
+    icon: FileUser,
+    isActive: true,
+    items: [
       {
         title: 'Individuals',
         icon: FileUser,
         url: '/individuals',
+      },
+      {
+        title: 'Types',
+        icon: Users,
+        url: '/types',
       },
     ],
   },

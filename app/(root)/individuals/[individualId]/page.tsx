@@ -9,11 +9,21 @@ const IndividualPage = async ({
   const { individualId } = await params;
   const supabase = await createClient();
 
+  // Fetch types for the dropdown
+  const { data: types, error: typesError } = await supabase
+    .from('types')
+    .select('id, name')
+    .order('name');
+
+  if (typesError) {
+    console.error('Error fetching types:', typesError);
+  }
+
   // If individualId is 'new', return empty individual
   if (individualId === 'new') {
     return (
       <div className="">
-        <IndividualForm individual={null} />
+        <IndividualForm individual={null} types={types || []} />
       </div>
     );
   }
@@ -32,7 +42,7 @@ const IndividualPage = async ({
 
   return (
     <div className="">
-      <IndividualForm individual={individual} />
+      <IndividualForm individual={individual} types={types || []} />
     </div>
   );
 };

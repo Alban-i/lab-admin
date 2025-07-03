@@ -9,8 +9,12 @@ interface Individual {
   id: number;
   name: string;
   description: string | null;
+  type_id: number | null;
   created_at: string | null;
   updated_at: string | null;
+  types?: {
+    name: string;
+  } | null;
 }
 
 interface IndividualsClientProps {
@@ -21,6 +25,12 @@ const IndividualsClient: React.FC<IndividualsClientProps> = ({
   individuals,
 }) => {
   const router = useRouter();
+
+  // Map the data to include type_name for the table
+  const mappedData = individuals.map((individual) => ({
+    ...individual,
+    type_name: individual.types?.name || null,
+  }));
 
   return (
     <div className="grid gap-3 px-4">
@@ -34,7 +44,7 @@ const IndividualsClient: React.FC<IndividualsClientProps> = ({
         </div>
       </div>
 
-      <DataTable data={individuals} columns={columns} />
+      <DataTable data={mappedData} columns={columns} />
     </div>
   );
 };

@@ -171,6 +171,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          type_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -178,6 +179,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          type_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -185,9 +187,18 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          type_id?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "individuals_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_logs: {
         Row: {
@@ -399,6 +410,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       whatsapp_messages: {
         Row: {

@@ -6,7 +6,14 @@ const IndividualsPage = async () => {
 
   const { data: individuals, error } = await supabase
     .from('individuals')
-    .select('*')
+    .select(
+      `
+      *,
+      types!left (
+        name
+      )
+    `
+    )
     .order('name', { ascending: true });
 
   if (error) {

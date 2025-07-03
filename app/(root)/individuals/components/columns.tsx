@@ -6,7 +6,8 @@ import { DataTableColumnHeader } from './data-table-column-header';
 export type IndividualsInDataTable = {
   id: number;
   name: string;
-  description: string | null;
+  type_id: number | null;
+  type_name?: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -30,15 +31,15 @@ export const columns: ExtendedColumnDef<IndividualsInDataTable>[] = [
     },
   },
   {
-    accessorKey: 'description',
-    label: 'Description',
+    accessorKey: 'type_name',
+    label: 'Type',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Description" />
+      <DataTableColumnHeader column={column} title="Type" />
     ),
     cell: ({ row }) => {
       return (
-        <div className="px-2 text-left font-medium">
-          {row.original.description}
+        <div className="px-2 text-left">
+          {row.original.type_name || 'No type'}
         </div>
       );
     },
