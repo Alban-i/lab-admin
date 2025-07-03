@@ -35,6 +35,7 @@ import { RevalidateButton } from '@/components/revalidate-button';
 interface Individual {
   id: number;
   name: string;
+  slug: string;
   description: string | null;
   type_id: number | null;
   created_at: string | null;
@@ -48,6 +49,13 @@ interface Type {
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      'Slug must be lowercase, contain only letters, numbers, and hyphens, and cannot start or end with a hyphen'
+    ),
   type_id: z.string().optional(),
 });
 
@@ -70,6 +78,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: individual?.name ?? '',
+      slug: individual?.slug ?? '',
       type_id: individual?.type_id?.toString() ?? 'none',
     },
   });
@@ -80,6 +89,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
         .from('individuals')
         .upsert({
           name: values.name,
+          slug: values.slug,
           description: description || null,
           type_id:
             values.type_id && values.type_id !== 'none'
@@ -162,7 +172,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
               <CardHeader>
                 <CardTitle>Individual Details</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-y-4">
+              <CardContent className="grid grid-cols-2 gap-x-2 gap-y-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -179,9 +189,23 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
 
                 <FormField
                   control={form.control}
-                  name="type_id"
+                  name="slug"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <FormControl>
+                        <Input placeholder="individual-slug" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="type_id"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
                       <FormLabel>Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}

@@ -171,6 +171,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          slug: string
           type_id: number | null
           updated_at: string | null
         }
@@ -179,6 +180,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          slug: string
           type_id?: number | null
           updated_at?: string | null
         }
@@ -187,6 +189,7 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          slug?: string
           type_id?: number | null
           updated_at?: string | null
         }
