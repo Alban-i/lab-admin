@@ -177,6 +177,7 @@ export type Database = {
           id: number
           name: string
           original_name: string | null
+          ranking: string | null
           slug: string
           status: string
           type_id: number | null
@@ -188,6 +189,7 @@ export type Database = {
           id?: number
           name: string
           original_name?: string | null
+          ranking?: string | null
           slug: string
           status?: string
           type_id?: number | null
@@ -199,6 +201,7 @@ export type Database = {
           id?: number
           name?: string
           original_name?: string | null
+          ranking?: string | null
           slug?: string
           status?: string
           type_id?: number | null

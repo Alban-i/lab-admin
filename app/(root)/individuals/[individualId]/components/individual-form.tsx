@@ -43,6 +43,7 @@ interface Individual {
   updated_at: string | null;
   original_name?: string | null;
   status: 'draft' | 'published' | 'archived'; // <-- Added
+  ranking?: 'recommended' | 'not recommended' | null; // <-- Added
 }
 
 interface Type {
@@ -62,6 +63,7 @@ const formSchema = z.object({
   type_id: z.string().optional(),
   original_name: z.string().optional(),
   status: z.enum(['draft', 'published', 'archived']), // <-- Added
+  ranking: z.enum(['recommended', 'not recommended']), // <-- Added
 });
 
 interface IndividualFormProps {
@@ -81,6 +83,10 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>(
     (individual?.status as 'draft' | 'published' | 'archived') ?? 'draft'
   );
+  const [ranking, setRanking] = useState<'recommended' | 'not recommended'>(
+    (individual?.ranking as 'recommended' | 'not recommended') ??
+      'not recommended'
+  );
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -89,6 +95,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       type_id: individual?.type_id?.toString() ?? 'none',
       original_name: individual?.original_name ?? '',
       status: individual?.status ?? 'draft', // <-- Added
+      ranking: individual?.ranking ?? 'not recommended', // <-- Added
     },
   });
 
@@ -106,6 +113,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
               : null,
           original_name: values.original_name || null,
           status: values.status, // <-- Added
+          ranking: values.ranking, // <-- Added
           ...(individual?.id && { id: individual.id }),
         })
         .select()
@@ -245,6 +253,29 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                           { value: 'draft', label: 'Draft' },
                           { value: 'published', label: 'Published' },
                           { value: 'archived', label: 'Archived' },
+                        ]}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Ranking Field */}
+                <FormField
+                  control={form.control}
+                  name="ranking"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Ranking</FormLabel>
+                      <TabToggle
+                        state={field.value}
+                        setState={field.onChange}
+                        picklist={[
+                          { value: 'recommended', label: 'Recommended' },
+                          {
+                            value: 'not recommended',
+                            label: 'Not Recommended',
+                          },
                         ]}
                       />
                       <FormMessage />
