@@ -27,6 +27,7 @@ interface Type {
   name: string;
   description: string;
   created_at: string;
+  classification: string;
 }
 
 interface TypesClientProps {
@@ -77,6 +78,7 @@ const TypesClient: React.FC<TypesClientProps> = ({ types }) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Classification</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Created At</TableHead>
               </TableRow>
@@ -88,18 +90,22 @@ const TypesClient: React.FC<TypesClientProps> = ({ types }) => {
                   className={cn('cursor-pointer hover:bg-secondary/50')}
                   onClick={() => router.push(`/types/${type.id}`)}
                 >
-                  <TableCell>{type.name}</TableCell>
+                  <TableCell className="font-bold">{type.name}</TableCell>
+                  <TableCell>
+                    {type.classification
+                      ? type.classification.charAt(0).toUpperCase() +
+                        type.classification.slice(1)
+                      : '—'}
+                  </TableCell>
                   <TableCell className="max-w-md break-words whitespace-normal">
                     {type.description}
                   </TableCell>
                   <TableCell>
                     {type.created_at
-                      ? new Date(type.created_at).toLocaleString('en-GB', {
+                      ? new Date(type.created_at).toLocaleDateString('en-GB', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
                         })
                       : ''}
                   </TableCell>

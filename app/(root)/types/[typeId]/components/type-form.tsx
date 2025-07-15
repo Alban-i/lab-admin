@@ -20,13 +20,27 @@ import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
+import type { Classification } from '@/types/types';
 
 const formSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
+  classification: z.enum([
+    'individual',
+    'organization',
+    'institution',
+    'collective',
+  ]),
 });
 
 interface Type {
@@ -34,6 +48,7 @@ interface Type {
   name: string;
   description: string;
   created_at: string;
+  classification: Classification;
 }
 
 interface TypeFormProps {
@@ -44,6 +59,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
   const defaultValues = type || {
     name: '',
     description: '',
+    classification: 'individual',
   };
 
   const [loading, setLoading] = useState(false);
@@ -56,6 +72,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
     defaultValues: {
       name: defaultValues.name ?? '',
       description: defaultValues.description ?? '',
+      classification: defaultValues.classification ?? 'individual',
     },
   });
 
@@ -74,6 +91,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
           .update({
             name: values.name,
             description: values.description,
+            classification: values.classification,
           })
           .eq('id', type.id);
 
@@ -88,6 +106,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
           .insert({
             name: values.name,
             description: values.description,
+            classification: values.classification,
           })
           .select()
           .single();
@@ -154,19 +173,56 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
                 <CardTitle>Type Details</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Type name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Type name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="classification"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Classification</FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={field.disabled}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select classification" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="individual">
+                                Individual
+                              </SelectItem>
+                              <SelectItem value="organization">
+                                Organization
+                              </SelectItem>
+                              <SelectItem value="institution">
+                                Institution
+                              </SelectItem>
+                              <SelectItem value="collective">
+                                Collective
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}

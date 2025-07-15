@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { RevalidateButton } from '@/components/revalidate-button';
+import { TabToggle } from '@/components/ui/tab-toggle';
 
 interface Individual {
   id: number;
@@ -40,6 +41,8 @@ interface Individual {
   type_id: number | null;
   created_at: string | null;
   updated_at: string | null;
+  original_name?: string | null;
+  status: 'draft' | 'published' | 'archived'; // <-- Added
 }
 
 interface Type {
@@ -57,6 +60,8 @@ const formSchema = z.object({
       'Slug must be lowercase, contain only letters, numbers, and hyphens, and cannot start or end with a hyphen'
     ),
   type_id: z.string().optional(),
+  original_name: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived']), // <-- Added
 });
 
 interface IndividualFormProps {
@@ -73,13 +78,17 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
   const [description, setDescription] = useState<string>(
     individual?.description ?? ''
   );
-
+  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>(
+    (individual?.status as 'draft' | 'published' | 'archived') ?? 'draft'
+  );
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: individual?.name ?? '',
       slug: individual?.slug ?? '',
       type_id: individual?.type_id?.toString() ?? 'none',
+      original_name: individual?.original_name ?? '',
+      status: individual?.status ?? 'draft', // <-- Added
     },
   });
 
@@ -95,6 +104,8 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
             values.type_id && values.type_id !== 'none'
               ? parseInt(values.type_id)
               : null,
+          original_name: values.original_name || null,
+          status: values.status, // <-- Added
           ...(individual?.id && { id: individual.id }),
         })
         .select()
@@ -196,6 +207,46 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                       <FormControl>
                         <Input placeholder="individual-slug" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Original Name Field */}
+                <FormField
+                  control={form.control}
+                  name="original_name"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Original Name (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Arabic name"
+                          dir="rtl"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Status Field */}
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Status</FormLabel>
+                      <TabToggle
+                        state={field.value}
+                        setState={field.onChange}
+                        picklist={[
+                          { value: 'draft', label: 'Draft' },
+                          { value: 'published', label: 'Published' },
+                          { value: 'archived', label: 'Archived' },
+                        ]}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

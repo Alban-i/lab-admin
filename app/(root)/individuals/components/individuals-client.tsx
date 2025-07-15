@@ -13,6 +13,8 @@ interface Individual {
   type_id: number | null;
   created_at: string | null;
   updated_at: string | null;
+  original_name?: string | null; // <-- Added
+  status: 'draft' | 'published' | 'archived'; // <-- Added
   types?: {
     name: string;
   } | null;
@@ -31,6 +33,8 @@ const IndividualsClient: React.FC<IndividualsClientProps> = ({
   const mappedData = individuals.map((individual) => ({
     ...individual,
     type_name: individual.types?.name || null,
+    original_name: individual.original_name || '', // <-- Ensure this is passed
+    status: individual.status, // <-- Ensure this is passed
   }));
 
   return (

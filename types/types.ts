@@ -33,3 +33,13 @@ export type Tasks = Omit<
     full_name: string;
   };
 };
+
+export type Classification =
+  | 'individual'
+  | 'organization'
+  | 'institution'
+  | 'collective';
+
+export type Type = Database['public']['Tables']['types']['Row'] & {
+  classification: Classification;
+};
