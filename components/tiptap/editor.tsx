@@ -86,36 +86,159 @@ interface HTMLAttributes {
 export default function Editor({ content = '', onChange }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // inside Editor()
   const audioInputRef = useRef<HTMLInputElement>(null);
 
+  const sanitizeFilename = (filename: string): string => {
+    // Remove or replace accented characters
+    const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // Replace spaces with underscores and remove special characters
+    const sanitized = normalized
+      .replace(/\s+/g, '_')  // Replace spaces with underscores
+      .replace(/[^a-zA-Z0-9._-]/g, '')  // Keep only alphanumeric, dots, underscores, and hyphens
+      .replace(/_{2,}/g, '_')  // Replace multiple underscores with single
+      .replace(/^_+|_+$/g, '');  // Remove leading/trailing underscores
+    
+    // Ensure filename is not empty and has reasonable length
+    if (!sanitized) {
+      return 'audio_file';
+    }
+    
+    // Limit filename length (keeping extension)
+    const parts = sanitized.split('.');
+    if (parts.length > 1) {
+      const name = parts.slice(0, -1).join('.');
+      const extension = parts[parts.length - 1];
+      const maxNameLength = 100;
+      
+      if (name.length > maxNameLength) {
+        return name.substring(0, maxNameLength) + '.' + extension;
+      }
+    }
+    
+    return sanitized;
+  };
+
+  const validateAudioFile = (file: File): string | null => {
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return 'File size must be less than 10MB';
+    }
+
+    // Check file type
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/mp3'];
+    if (!allowedTypes.includes(file.type)) {
+      return 'Please upload a valid audio file (MP3, WAV, OGG, M4A)';
+    }
+
+    // Check filename for problematic characters
+    const sanitizedName = sanitizeFilename(file.name);
+    if (sanitizedName === 'audio_file' || sanitizedName !== file.name) {
+      // This is just a warning - we'll still proceed with upload using sanitized name
+      console.warn('Filename contains special characters and will be sanitized for storage');
+    }
+
+    return null;
+  };
+
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const supabase = createClient();
     const file = e.target.files?.[0];
+    
+    // Reset error state
+    setUploadError(null);
+    
     if (!file || !editor) return;
-    const fileName = `${Date.now()}_${file.name}`;
-    // upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('audios')
-      .upload(fileName, file);
-    if (error) {
-      console.error(error);
+
+    // Validate file
+    const validationError = validateAudioFile(file);
+    if (validationError) {
+      setUploadError(validationError);
       return;
     }
-    // get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('audios').getPublicUrl(fileName);
-    // insert into editor
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'audio',
-        attrs: { src: publicUrl, title: file.name },
-      })
-      .run();
+
+    setIsUploadingAudio(true);
+
+    try {
+      const sanitizedFilename = sanitizeFilename(file.name);
+      const fileName = `${Date.now()}_${sanitizedFilename}`;
+      
+      // Upload to Supabase Storage with retry logic
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uploadWithRetry = async (retries = 3): Promise<{ data: any; error: any }> => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const { data, error } = await supabase.storage
+              .from('audios')
+              .upload(fileName, file);
+            
+            if (error) {
+              if (i === retries - 1) throw error;
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+              continue;
+            }
+            
+            return { data, error };
+          } catch (err) {
+            if (i === retries - 1) throw err;
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          }
+        }
+        // This should never be reached, but TypeScript requires it
+        throw new Error('Upload failed after all retries');
+      };
+
+      const { data, error } = await uploadWithRetry();
+      
+      if (error) {
+        let errorMessage = 'Failed to upload audio file';
+        
+        // Handle specific error types
+        if (error.message?.includes('row-level security')) {
+          errorMessage = 'Permission denied. Please check your upload permissions.';
+        } else if (error.message?.includes('size')) {
+          errorMessage = 'File size exceeds limit. Please try a smaller file.';
+        } else if (error.message?.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message?.includes('InvalidKey') || error.statusCode === '400') {
+          errorMessage = 'Invalid filename. Please rename your file to use only letters, numbers, and basic punctuation.';
+        }
+        
+        setUploadError(errorMessage);
+        return;
+      }
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('audios').getPublicUrl(fileName);
+
+      // Insert into editor
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'audio',
+          attrs: { src: publicUrl, title: file.name }, // Keep original filename for display
+        })
+        .run();
+
+      // Clear the input value to allow re-uploading the same file
+      if (audioInputRef.current) {
+        audioInputRef.current.value = '';
+      }
+
+    } catch (error) {
+      console.error('Audio upload error:', error);
+      setUploadError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsUploadingAudio(false);
+    }
   };
 
   const editor = useEditor({
@@ -531,8 +654,9 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           variant="outline"
           size="sm"
           onClick={() => audioInputRef.current?.click()}
+          disabled={isUploadingAudio}
         >
-          Audio
+          {isUploadingAudio ? 'Uploading...' : 'Audio'}
         </Button>
         {/* <PostSelector
           onSelect={(post) => {
@@ -678,6 +802,34 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           )}
         </Toggle>
       </div>
+
+      {/* ERROR MESSAGE */}
+      {uploadError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{uploadError}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                type="button"
+                onClick={() => setUploadError(null)}
+                className="inline-flex text-red-400 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <span className="sr-only">Dismiss</span>
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* EDITOR CONTENT */}
       <EditorContent
