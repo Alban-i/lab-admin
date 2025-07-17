@@ -238,6 +238,62 @@ export type Database = {
         }
         Relationships: []
       }
+      media: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          media_type: string
+          mime_type: string
+          original_name: string
+          updated_at: string | null
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          media_type: string
+          mime_type: string
+          original_name: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          media_type?: string
+          mime_type?: string
+          original_name?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           author_id: string | null

@@ -11,7 +11,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
-import { EditorContent, Node, useEditor } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Footnote, FootnoteReference, Footnotes } from 'tiptap-footnotes';
 import { TextDirection } from 'tiptap-text-direction';
@@ -40,9 +40,12 @@ import {
   Split,
   Table as TableIcon,
   Trash2,
+  Music,
+  FileText,
+  Video,
 } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -53,7 +56,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Toggle } from '@/components/ui/toggle';
-import { createClient } from '@/providers/supabase/client';
 import { CustomAudioExtension } from './audio/custom-audio-extension';
 import CustomImageExtension from './image/custom-image-extension';
 // import { PostReference } from './post/static-post-reference';
@@ -65,6 +67,10 @@ import {
   LayoutColumnExtension,
   LayoutExtension,
 } from './layout/layout-extension';
+import { MediaLibraryModal } from '../media/media-library-modal';
+import { MediaUploadDialog } from '../media/media-upload-dialog';
+import { MediaWithProfile } from '@/actions/get-media';
+import { TablesInsert } from '@/types/types_db';
 
 interface EditorProps {
   content?: string;
@@ -79,167 +85,19 @@ interface UploadResult {
     | string;
 }
 
-interface HTMLAttributes {
-  [key: string]: string | number | boolean | undefined;
-}
 
 export default function Editor({ content = '', onChange }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
-  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
-  // inside Editor()
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  // Media upload dialog states
+  const [isAudioUploadOpen, setIsAudioUploadOpen] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+  const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
+  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
 
-  const sanitizeFilename = (filename: string): string => {
-    // Remove or replace accented characters
-    const normalized = filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    
-    // Replace spaces with underscores and remove special characters
-    const sanitized = normalized
-      .replace(/\s+/g, '_')  // Replace spaces with underscores
-      .replace(/[^a-zA-Z0-9._-]/g, '')  // Keep only alphanumeric, dots, underscores, and hyphens
-      .replace(/_{2,}/g, '_')  // Replace multiple underscores with single
-      .replace(/^_+|_+$/g, '');  // Remove leading/trailing underscores
-    
-    // Ensure filename is not empty and has reasonable length
-    if (!sanitized) {
-      return 'audio_file';
-    }
-    
-    // Limit filename length (keeping extension)
-    const parts = sanitized.split('.');
-    if (parts.length > 1) {
-      const name = parts.slice(0, -1).join('.');
-      const extension = parts[parts.length - 1];
-      const maxNameLength = 100;
-      
-      if (name.length > maxNameLength) {
-        return name.substring(0, maxNameLength) + '.' + extension;
-      }
-    }
-    
-    return sanitized;
-  };
-
-  const validateAudioFile = (file: File): string | null => {
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      return 'File size must be less than 10MB';
-    }
-
-    // Check file type
-    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/mp3'];
-    if (!allowedTypes.includes(file.type)) {
-      return 'Please upload a valid audio file (MP3, WAV, OGG, M4A)';
-    }
-
-    // Check filename for problematic characters
-    const sanitizedName = sanitizeFilename(file.name);
-    if (sanitizedName === 'audio_file' || sanitizedName !== file.name) {
-      // This is just a warning - we'll still proceed with upload using sanitized name
-      console.warn('Filename contains special characters and will be sanitized for storage');
-    }
-
-    return null;
-  };
-
-  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const supabase = createClient();
-    const file = e.target.files?.[0];
-    
-    // Reset error state
-    setUploadError(null);
-    
-    if (!file || !editor) return;
-
-    // Validate file
-    const validationError = validateAudioFile(file);
-    if (validationError) {
-      setUploadError(validationError);
-      return;
-    }
-
-    setIsUploadingAudio(true);
-
-    try {
-      const sanitizedFilename = sanitizeFilename(file.name);
-      const fileName = `${Date.now()}_${sanitizedFilename}`;
-      
-      // Upload to Supabase Storage with retry logic
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const uploadWithRetry = async (retries = 3): Promise<{ data: any; error: any }> => {
-        for (let i = 0; i < retries; i++) {
-          try {
-            const { data, error } = await supabase.storage
-              .from('audios')
-              .upload(fileName, file);
-            
-            if (error) {
-              if (i === retries - 1) throw error;
-              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
-              continue;
-            }
-            
-            return { data, error };
-          } catch (err) {
-            if (i === retries - 1) throw err;
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-          }
-        }
-        // This should never be reached, but TypeScript requires it
-        throw new Error('Upload failed after all retries');
-      };
-
-      const { data, error } = await uploadWithRetry();
-      
-      if (error) {
-        let errorMessage = 'Failed to upload audio file';
-        
-        // Handle specific error types
-        if (error.message?.includes('row-level security')) {
-          errorMessage = 'Permission denied. Please check your upload permissions.';
-        } else if (error.message?.includes('size')) {
-          errorMessage = 'File size exceeds limit. Please try a smaller file.';
-        } else if (error.message?.includes('network')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (error.message?.includes('InvalidKey') || error.statusCode === '400') {
-          errorMessage = 'Invalid filename. Please rename your file to use only letters, numbers, and basic punctuation.';
-        }
-        
-        setUploadError(errorMessage);
-        return;
-      }
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('audios').getPublicUrl(fileName);
-
-      // Insert into editor
-      editor
-        .chain()
-        .focus()
-        .insertContent({
-          type: 'audio',
-          attrs: { src: publicUrl, title: file.name }, // Keep original filename for display
-        })
-        .run();
-
-      // Clear the input value to allow re-uploading the same file
-      if (audioInputRef.current) {
-        audioInputRef.current.value = '';
-      }
-
-    } catch (error) {
-      console.error('Audio upload error:', error);
-      setUploadError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsUploadingAudio(false);
-    }
-  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -296,7 +154,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[200px] w-full',
         dir: direction,
       },
-      handleKeyDown: (view, event) => {
+      handleKeyDown: (_view, event) => {
         if (event.key === 'Alt' && event.shiftKey) {
           const newDirection = direction === 'ltr' ? 'rtl' : 'ltr';
           setDirection(newDirection);
@@ -305,7 +163,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         }
         return false;
       },
-      handleDrop: (view: EditorView, event: DragEvent, slice, moved) => {
+      handleDrop: (view: EditorView, event: DragEvent, _slice, _moved) => {
         try {
           const jsonData = event.dataTransfer?.getData('application/json');
           if (!jsonData) return false;
@@ -387,6 +245,92 @@ export default function Editor({ content = '', onChange }: EditorProps) {
     [editor]
   );
 
+  const handleMediaUploadSuccess = useCallback((uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
+    if (!editor || uploadedMedia.length === 0) return;
+
+    // Reset error state
+    setUploadError(null);
+
+    console.log('handleMediaUploadSuccess called with:', uploadedMedia);
+
+    // Insert each uploaded media item into the editor immediately
+    uploadedMedia.forEach((media) => {
+      console.log('Processing media:', media);
+      
+      try {
+        // Ensure editor has focus before inserting content
+        if (!editor.isFocused) {
+          editor.commands.focus();
+        }
+
+        switch (media.media_type) {
+          case 'audio':
+            console.log('Inserting audio with src:', media.url, 'title:', media.original_name);
+            const audioInserted = editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: 'audio',
+                attrs: { src: media.url, title: media.original_name },
+              })
+              .run();
+            
+            console.log('Audio insertion result:', audioInserted);
+            if (!audioInserted) {
+              console.error('Failed to insert audio content');
+            }
+            break;
+          case 'image':
+            const imageInserted = editor
+              .chain()
+              .focus()
+              .setImage({
+                src: media.url,
+                alt: media.alt_text || media.original_name,
+                title: media.original_name,
+              })
+              .run();
+            
+            if (!imageInserted) {
+              console.error('Failed to insert image content');
+            }
+            break;
+          case 'video':
+            // For now, insert as a link, but this could be extended with a video extension
+            const videoInserted = editor
+              .chain()
+              .focus()
+              .insertContent(
+                `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+              )
+              .run();
+            
+            if (!videoInserted) {
+              console.error('Failed to insert video content');
+            }
+            break;
+          case 'document':
+            // Insert as a link to the document
+            const documentInserted = editor
+              .chain()
+              .focus()
+              .insertContent(
+                `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+              )
+              .run();
+            
+            if (!documentInserted) {
+              console.error('Failed to insert document content');
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('Error inserting media content:', error);
+        setUploadError(`Failed to insert ${media.media_type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    });
+  }, [editor]);
+
   const toggleDirection = useCallback(() => {
     if (!editor) return;
     const newDirection = direction === 'ltr' ? 'rtl' : 'ltr';
@@ -431,6 +375,61 @@ export default function Editor({ content = '', onChange }: EditorProps) {
 
     editor.chain().focus().addFootnote().run();
   }, [editor]);
+
+  const handleMediaSelect = useCallback(
+    (media: MediaWithProfile) => {
+      if (!editor) return;
+
+      // Insert different types of media based on their type
+      switch (media.media_type) {
+        case 'audio':
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: 'audio',
+              attrs: {
+                src: media.url,
+                title: media.original_name,
+              },
+            })
+            .run();
+          break;
+        case 'image':
+          editor
+            .chain()
+            .focus()
+            .setImage({
+              src: media.url,
+              alt: media.alt_text || media.original_name,
+              title: media.original_name,
+            })
+            .run();
+          break;
+        case 'video':
+          // For now, insert as a simple link, but this could be extended with a video extension
+          editor
+            .chain()
+            .focus()
+            .insertContent(
+              `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+            )
+            .run();
+          break;
+        case 'document':
+          // Insert as a link to the document
+          editor
+            .chain()
+            .focus()
+            .insertContent(
+              `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+            )
+            .run();
+          break;
+      }
+    },
+    [editor]
+  );
 
   if (!editor || !isMounted) {
     return null;
@@ -614,11 +613,51 @@ export default function Editor({ content = '', onChange }: EditorProps) {
                 size="sm"
               >
                 <ImagePlus className="h-4 w-4 mr-2" />
-                Image
+                Image (Cloud)
               </Button>
             );
           }}
         </CldUploadWidget>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsAudioUploadOpen(true)}
+          disabled={isAudioUploadOpen}
+        >
+          <Music className="h-4 w-4 mr-2" />
+          Audio
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsImageUploadOpen(true)}
+          disabled={isImageUploadOpen}
+        >
+          <ImagePlus className="h-4 w-4 mr-2" />
+          Image
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsVideoUploadOpen(true)}
+          disabled={isVideoUploadOpen}
+        >
+          <Video className="h-4 w-4 mr-2" />
+          Video
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsDocumentUploadOpen(true)}
+          disabled={isDocumentUploadOpen}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Document
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -642,21 +681,14 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           <Asterisk className="h-4 w-4 mr-2" />
           Footnote
         </Button>
-        <input
-          type="file"
-          accept="audio/*"
-          ref={audioInputRef}
-          onChange={handleAudioUpload}
-          style={{ display: 'none' }}
-        />
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => audioInputRef.current?.click()}
-          disabled={isUploadingAudio}
+          onClick={() => setIsMediaLibraryOpen(true)}
         >
-          {isUploadingAudio ? 'Uploading...' : 'Audio'}
+          <Music className="h-4 w-4 mr-2" />
+          Media
         </Button>
         {/* <PostSelector
           onSelect={(post) => {
@@ -808,8 +840,16 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              <svg
+                className="h-5 w-5 text-red-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="ml-3">
@@ -822,8 +862,16 @@ export default function Editor({ content = '', onChange }: EditorProps) {
                 className="inline-flex text-red-400 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 <span className="sr-only">Dismiss</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
             </div>
@@ -847,6 +895,40 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           </code>
         </pre>
       </div>
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        isOpen={isMediaLibraryOpen}
+        onClose={() => setIsMediaLibraryOpen(false)}
+        onSelect={handleMediaSelect}
+        title="Select Media"
+      />
+
+      {/* Media Upload Dialogs */}
+      <MediaUploadDialog
+        isOpen={isAudioUploadOpen}
+        onClose={() => setIsAudioUploadOpen(false)}
+        onSuccess={handleMediaUploadSuccess}
+        mediaType="audio"
+      />
+      <MediaUploadDialog
+        isOpen={isImageUploadOpen}
+        onClose={() => setIsImageUploadOpen(false)}
+        onSuccess={handleMediaUploadSuccess}
+        mediaType="image"
+      />
+      <MediaUploadDialog
+        isOpen={isVideoUploadOpen}
+        onClose={() => setIsVideoUploadOpen(false)}
+        onSuccess={handleMediaUploadSuccess}
+        mediaType="video"
+      />
+      <MediaUploadDialog
+        isOpen={isDocumentUploadOpen}
+        onClose={() => setIsDocumentUploadOpen(false)}
+        onSuccess={handleMediaUploadSuccess}
+        mediaType="document"
+      />
     </div>
   );
 }

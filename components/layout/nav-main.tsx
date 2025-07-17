@@ -19,7 +19,7 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 
-import { useSelectedLayoutSegment } from 'next/navigation';
+import { useSelectedLayoutSegments } from 'next/navigation';
 import Link from 'next/link';
 
 export function NavMain({
@@ -37,7 +37,9 @@ export function NavMain({
     }[];
   }[];
 }) {
-  const segment = useSelectedLayoutSegment();
+  const segments = useSelectedLayoutSegments();
+  const lastSegment = segments[segments.length - 1];
+  const getLastPath = (url: string) => url.split('/').filter(Boolean).pop();
 
   return (
     <SidebarGroup>
@@ -68,7 +70,7 @@ export function NavMain({
                             <SidebarMenuSubButton
                               asChild
                               isActive={
-                                segment ? subItem.url.includes(segment) : false
+                                lastSegment === getLastPath(subItem.url)
                               }
                             >
                               <Link href={subItem.url}>

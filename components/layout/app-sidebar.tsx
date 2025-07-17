@@ -30,6 +30,11 @@ import {
   University,
   UserRoundPen,
   Users,
+  Image as ImageIcon,
+  Music,
+  Video,
+  FileText,
+  Folder,
 } from 'lucide-react';
 
 import { NavMain } from '@/components/layout/nav-main';
@@ -111,6 +116,34 @@ const navMainData = [
         title: 'Types',
         icon: Users,
         url: '/types',
+      },
+    ],
+  },
+  {
+    title: 'Media',
+    url: '#',
+    icon: Folder,
+    isActive: true,
+    items: [
+      {
+        title: 'Audio Files',
+        icon: Music,
+        url: '/media/audio',
+      },
+      {
+        title: 'Images',
+        icon: ImageIcon,
+        url: '/media/images',
+      },
+      {
+        title: 'Videos',
+        icon: Video,
+        url: '/media/videos',
+      },
+      {
+        title: 'Documents',
+        icon: FileText,
+        url: '/media/documents',
       },
     ],
   },
