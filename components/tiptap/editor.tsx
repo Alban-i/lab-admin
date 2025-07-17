@@ -56,6 +56,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Toggle } from '@/components/ui/toggle';
+import { Separator } from '@/components/ui/separator';
 import { CustomAudioExtension } from './audio/custom-audio-extension';
 import CustomImageExtension from './image/custom-image-extension';
 // import { PostReference } from './post/static-post-reference';
@@ -85,7 +86,6 @@ interface UploadResult {
     | string;
 }
 
-
 export default function Editor({ content = '', onChange }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
@@ -97,7 +97,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
-
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -245,91 +244,103 @@ export default function Editor({ content = '', onChange }: EditorProps) {
     [editor]
   );
 
-  const handleMediaUploadSuccess = useCallback((uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
-    if (!editor || uploadedMedia.length === 0) return;
+  const handleMediaUploadSuccess = useCallback(
+    (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
+      if (!editor || uploadedMedia.length === 0) return;
 
-    // Reset error state
-    setUploadError(null);
+      // Reset error state
+      setUploadError(null);
 
-    console.log('handleMediaUploadSuccess called with:', uploadedMedia);
+      console.log('handleMediaUploadSuccess called with:', uploadedMedia);
 
-    // Insert each uploaded media item into the editor immediately
-    uploadedMedia.forEach((media) => {
-      console.log('Processing media:', media);
-      
-      try {
-        // Ensure editor has focus before inserting content
-        if (!editor.isFocused) {
-          editor.commands.focus();
+      // Insert each uploaded media item into the editor immediately
+      uploadedMedia.forEach((media) => {
+        console.log('Processing media:', media);
+
+        try {
+          // Ensure editor has focus before inserting content
+          if (!editor.isFocused) {
+            editor.commands.focus();
+          }
+
+          switch (media.media_type) {
+            case 'audio':
+              console.log(
+                'Inserting audio with src:',
+                media.url,
+                'title:',
+                media.original_name
+              );
+              const audioInserted = editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'audio',
+                  attrs: { src: media.url, title: media.original_name },
+                })
+                .run();
+
+              console.log('Audio insertion result:', audioInserted);
+              if (!audioInserted) {
+                console.error('Failed to insert audio content');
+              }
+              break;
+            case 'image':
+              const imageInserted = editor
+                .chain()
+                .focus()
+                .setImage({
+                  src: media.url,
+                  alt: media.alt_text || media.original_name,
+                  title: media.original_name,
+                })
+                .run();
+
+              if (!imageInserted) {
+                console.error('Failed to insert image content');
+              }
+              break;
+            case 'video':
+              // For now, insert as a link, but this could be extended with a video extension
+              const videoInserted = editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+                )
+                .run();
+
+              if (!videoInserted) {
+                console.error('Failed to insert video content');
+              }
+              break;
+            case 'document':
+              // Insert as a link to the document
+              const documentInserted = editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<a href="${media.url}" target="_blank">${media.original_name}</a>`
+                )
+                .run();
+
+              if (!documentInserted) {
+                console.error('Failed to insert document content');
+              }
+              break;
+          }
+        } catch (error) {
+          console.error('Error inserting media content:', error);
+          setUploadError(
+            `Failed to insert ${media.media_type}: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`
+          );
         }
-
-        switch (media.media_type) {
-          case 'audio':
-            console.log('Inserting audio with src:', media.url, 'title:', media.original_name);
-            const audioInserted = editor
-              .chain()
-              .focus()
-              .insertContent({
-                type: 'audio',
-                attrs: { src: media.url, title: media.original_name },
-              })
-              .run();
-            
-            console.log('Audio insertion result:', audioInserted);
-            if (!audioInserted) {
-              console.error('Failed to insert audio content');
-            }
-            break;
-          case 'image':
-            const imageInserted = editor
-              .chain()
-              .focus()
-              .setImage({
-                src: media.url,
-                alt: media.alt_text || media.original_name,
-                title: media.original_name,
-              })
-              .run();
-            
-            if (!imageInserted) {
-              console.error('Failed to insert image content');
-            }
-            break;
-          case 'video':
-            // For now, insert as a link, but this could be extended with a video extension
-            const videoInserted = editor
-              .chain()
-              .focus()
-              .insertContent(
-                `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-              )
-              .run();
-            
-            if (!videoInserted) {
-              console.error('Failed to insert video content');
-            }
-            break;
-          case 'document':
-            // Insert as a link to the document
-            const documentInserted = editor
-              .chain()
-              .focus()
-              .insertContent(
-                `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-              )
-              .run();
-            
-            if (!documentInserted) {
-              console.error('Failed to insert document content');
-            }
-            break;
-        }
-      } catch (error) {
-        console.error('Error inserting media content:', error);
-        setUploadError(`Failed to insert ${media.media_type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    });
-  }, [editor]);
+      });
+    },
+    [editor]
+  );
 
   const toggleDirection = useCallback(() => {
     if (!editor) return;
@@ -439,6 +450,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
     <div className="w-full">
       {/* MENU BAR */}
       <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-muted rounded-lg">
+        {/* GROUP 1: HTML STYLING & FORMATTING */}
         <Toggle
           pressed={editor.isActive('bold')}
           onPressedChange={() => editor.chain().focus().toggleBold().run()}
@@ -600,64 +612,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           <span className="h-4 w-4 mr-2 font-bold">Q</span>
           Quote + Translation
         </Button>
-        <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
-          {({ open }) => {
-            const onClick = () => {
-              open();
-            };
-            return (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClick}
-                size="sm"
-              >
-                <ImagePlus className="h-4 w-4 mr-2" />
-                Image (Cloud)
-              </Button>
-            );
-          }}
-        </CldUploadWidget>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsAudioUploadOpen(true)}
-          disabled={isAudioUploadOpen}
-        >
-          <Music className="h-4 w-4 mr-2" />
-          Audio
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsImageUploadOpen(true)}
-          disabled={isImageUploadOpen}
-        >
-          <ImagePlus className="h-4 w-4 mr-2" />
-          Image
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsVideoUploadOpen(true)}
-          disabled={isVideoUploadOpen}
-        >
-          <Video className="h-4 w-4 mr-2" />
-          Video
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsDocumentUploadOpen(true)}
-          disabled={isDocumentUploadOpen}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Document
-        </Button>
         <Button
           type="button"
           variant="outline"
@@ -681,50 +635,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           <Asterisk className="h-4 w-4 mr-2" />
           Footnote
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsMediaLibraryOpen(true)}
-        >
-          <Music className="h-4 w-4 mr-2" />
-          Media
-        </Button>
-        {/* <PostSelector
-          onSelect={(post) => {
-            if (editor) {
-              editor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: 'postReference',
-                  attrs: {
-                    postId: post.id,
-                    title: post.title,
-                    content: post.content,
-                    imageUrl: post.image_url,
-                  },
-                })
-                .run();
-            }
-          }}
-        /> */}
-        <DynamicPostSelectorDialog
-          onSelect={(postId) => {
-            if (editor) {
-              editor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: 'dynamicPostReference',
-                  attrs: {
-                    postId,
-                  },
-                })
-                .run();
-            }
-          }}
-        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
@@ -833,6 +743,99 @@ export default function Editor({ content = '', onChange }: EditorProps) {
             <AlignRight className="h-4 w-4" />
           )}
         </Toggle>
+
+        {/* SEPARATOR 1 */}
+        <Separator className="h-6" />
+
+        {/* GROUP 2: MEDIA MANAGEMENT */}
+        <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
+          {({ open }) => {
+            const onClick = () => {
+              open();
+            };
+            return (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClick}
+                size="sm"
+              >
+                <ImagePlus className="h-4 w-4 mr-2" />
+                Image (Cloud)
+              </Button>
+            );
+          }}
+        </CldUploadWidget>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsAudioUploadOpen(true)}
+          disabled={isAudioUploadOpen}
+        >
+          <Music className="h-4 w-4 mr-2" />
+          Audio
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsImageUploadOpen(true)}
+          disabled={isImageUploadOpen}
+        >
+          <ImagePlus className="h-4 w-4 mr-2" />
+          Image
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsVideoUploadOpen(true)}
+          disabled={isVideoUploadOpen}
+        >
+          <Video className="h-4 w-4 mr-2" />
+          Video
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsDocumentUploadOpen(true)}
+          disabled={isDocumentUploadOpen}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Document
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsMediaLibraryOpen(true)}
+        >
+          <Music className="h-4 w-4 mr-2" />
+          Media
+        </Button>
+
+        {/* SEPARATOR 2 */}
+        <Separator className="h-6" />
+
+        {/* GROUP 3: POST REFERENCES */}
+        <DynamicPostSelectorDialog
+          onSelect={(postId) => {
+            if (editor) {
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'dynamicPostReference',
+                  attrs: {
+                    postId,
+                  },
+                })
+                .run();
+            }
+          }}
+        />
       </div>
 
       {/* ERROR MESSAGE */}
