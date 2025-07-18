@@ -12,8 +12,6 @@ import {
   Search, 
   Upload, 
   Filter, 
-  Grid, 
-  List, 
   Image, 
   Music, 
   Video, 
@@ -27,6 +25,7 @@ import { getMedia, MediaWithProfile, MediaFilters } from '@/actions/get-media';
 import { MediaItem } from './media-item';
 import { MediaUploadDialog } from './media-upload-dialog';
 import { toast } from 'sonner';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export interface MediaLibraryModalProps {
   isOpen: boolean;
@@ -49,7 +48,6 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>(mediaType || 'all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedMedia, setSelectedMedia] = useState<MediaWithProfile[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -134,18 +132,13 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
     fetchMedia(newPage, searchTerm, selectedType);
   };
 
-  const handleUploadSuccess = () => {
-    setIsUploadDialogOpen(false);
-    fetchMedia(currentPage, searchTerm, selectedType);
-    toast.success('Media uploaded successfully!');
-  };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-[95vw] w-[95vw] h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {title}
@@ -158,18 +151,8 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
           </DialogHeader>
 
           <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-            {/* Search and Filter Bar */}
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search media..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
+            {/* Filter and Upload Bar */}
+            <div className="flex items-center gap-4 pb-4">
               <Select value={selectedType} onValueChange={handleTypeChange}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filter by type" />
@@ -183,23 +166,6 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                 </SelectContent>
               </Select>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-
               <Button
                 onClick={() => setIsUploadDialogOpen(true)}
                 className="flex items-center gap-2"
@@ -209,7 +175,20 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
               </Button>
             </div>
 
-            {/* Media Grid/List */}
+            {/* Search Bar */}
+            <div className="pb-4 border-b">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search media..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+            </div>
+
+            {/* Media Table */}
             <ScrollArea className="flex-1">
               {loading ? (
                 <div className="flex items-center justify-center h-32">
@@ -222,22 +201,26 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                   <p className="text-sm">Try adjusting your search or upload new media</p>
                 </div>
               ) : (
-                <div className={
-                  viewMode === 'grid' 
-                    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4' 
-                    : 'space-y-2'
-                }>
-                  {media.map((mediaItem) => (
-                    <MediaItem
-                      key={mediaItem.id}
-                      media={mediaItem}
-                      viewMode={viewMode}
-                      isSelected={selectedMedia.some(item => item.id === mediaItem.id)}
-                      onSelect={() => handleMediaSelect(mediaItem)}
-                      onRefresh={() => fetchMedia(currentPage, searchTerm, selectedType)}
-                    />
-                  ))}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {media.map((mediaItem) => (
+                      <MediaItem
+                        key={mediaItem.id}
+                        media={mediaItem}
+                        isSelected={selectedMedia.some(item => item.id === mediaItem.id)}
+                        onSelect={() => handleMediaSelect(mediaItem)}
+                        onRefresh={() => fetchMedia(currentPage, searchTerm, selectedType)}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </ScrollArea>
 
@@ -291,7 +274,6 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
       <MediaUploadDialog
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
-        onSuccess={handleUploadSuccess}
         mediaType={mediaType}
       />
     </>

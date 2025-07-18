@@ -47,7 +47,7 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
   addCommands() {
     return {
       setAudio:
-        (options) =>
+        (options: { src?: string; title?: string }) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
             type: this.name,
@@ -59,7 +59,7 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
         ({ commands }: CommandProps) => {
           return commands.deleteSelection();
         },
-    };
+    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   },
 
   addNodeView() {

@@ -60,7 +60,7 @@ export const CustomDocumentExtension = Node.create<DocumentOptions>({
   addCommands() {
     return {
       setDocument:
-        (options) =>
+        (options: { src?: string; title?: string; fileType?: string; fileSize?: string }) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
             type: this.name,
@@ -72,7 +72,7 @@ export const CustomDocumentExtension = Node.create<DocumentOptions>({
         ({ commands }: CommandProps) => {
           return commands.deleteSelection();
         },
-    };
+    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   },
 
   addNodeView() {

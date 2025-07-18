@@ -51,7 +51,7 @@ export const CustomVideoExtension = Node.create<VideoOptions>({
   addCommands() {
     return {
       setVideo:
-        (options) =>
+        (options: { src?: string; title?: string; poster?: string }) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
             type: this.name,
@@ -63,7 +63,7 @@ export const CustomVideoExtension = Node.create<VideoOptions>({
         ({ commands }: CommandProps) => {
           return commands.deleteSelection();
         },
-    };
+    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   },
 
   addNodeView() {

@@ -18,7 +18,8 @@ import {
   FileText, 
   AlertCircle,
   Check,
-  Loader2
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 import { uploadMedia, MediaUploadData } from '@/actions/upload-media';
 import { TablesInsert } from '@/types/types_db';
@@ -28,7 +29,7 @@ import { cn } from '@/lib/utils';
 interface MediaUploadDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => void;
+  onSuccess?: (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => void;
   mediaType?: 'audio' | 'image' | 'video' | 'document';
 }
 
@@ -52,6 +53,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showSuccessState, setShowSuccessState] = useState(false);
 
   const getMediaTypeFromFile = useCallback((file: File): 'audio' | 'image' | 'video' | 'document' => {
     if (mediaType) return mediaType;
@@ -227,20 +229,33 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
       if (successCount > 0) {
         toast.success(`${successCount} file(s) uploaded successfully`);
         
-        // Collect uploaded media data for successful uploads and call onSuccess immediately
-        const uploadedMediaData = files
+        // Call onSuccess callback with uploaded media data
+        const uploadedMedia = files
           .filter(file => file.status === 'success' && file.uploadedMediaData)
           .map(file => file.uploadedMediaData!);
         
-        onSuccess(uploadedMediaData);
+        if (onSuccess && uploadedMedia.length > 0) {
+          onSuccess(uploadedMedia);
+        }
+        
+        // Show success state
+        setShowSuccessState(true);
+        
+        // Auto-close modal after successful upload
+        setTimeout(() => {
+          setFiles([]);
+          setShowSuccessState(false);
+          onClose();
+        }, 2000); // Longer delay to show success state
       }
       
       if (errorCount > 0) {
         toast.error(`${errorCount} file(s) failed to upload`);
+        // Only reset files if there were no successful uploads
+        if (successCount === 0) {
+          setFiles([]);
+        }
       }
-
-      // Reset files state but keep modal open for user to interact with confirmation
-      setFiles([]);
     } catch (error) {
       toast.error('Upload failed');
     } finally {
@@ -251,6 +266,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   const handleClose = () => {
     if (!isUploading) {
       setFiles([]);
+      setShowSuccessState(false);
       onClose();
     }
   };
@@ -266,7 +282,20 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          {files.length === 0 ? (
+          {showSuccessState ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <CheckCircle className="h-16 w-16 text-green-600" />
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-green-600">Upload Successful!</h3>
+                <p className="text-sm text-muted-foreground">
+                  {files.filter(file => file.status === 'success').length} file(s) uploaded successfully
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Closing automatically...
+                </p>
+              </div>
+            </div>
+          ) : files.length === 0 ? (
             <div
               className={cn(
                 "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
@@ -441,11 +470,6 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
             </Button>
           )}
           
-          {hasSuccessfulUploads && !isUploading && (
-            <div className="text-sm text-green-600 font-medium">
-              Upload complete! Check the editor for insertion options.
-            </div>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

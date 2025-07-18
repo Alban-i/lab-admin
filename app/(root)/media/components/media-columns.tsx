@@ -9,6 +9,16 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { MediaWithProfile } from '@/actions/get-media';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { 
@@ -59,6 +69,7 @@ const formatDate = (dateString: string) => {
 
 const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh: () => void }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -71,10 +82,6 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${media.original_name}"?`)) {
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const result = await deleteMedia(media.id);
@@ -88,37 +95,60 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
       toast.error('An error occurred while deleting media');
     } finally {
       setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link href={`/media/${media.media_type}/${media.id}`}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownload}>
-          <Download className="h-4 w-4 mr-2" />
-          Download
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="text-destructive"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          {isDeleting ? 'Deleting...' : 'Delete'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/media/${media.media_type}/${media.id}`}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDownload}>
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => setShowDeleteDialog(true)}
+            className="text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Media</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{media.original_name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
@@ -133,9 +163,11 @@ export const createMediaColumns = (onRefresh: () => void): ColumnDef<MediaWithPr
       const MediaIcon = getMediaIcon(media.media_type);
       
       return (
-        <div className="flex items-center gap-2">
-          <MediaIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">{media.original_name}</span>
+        <div className="flex items-center gap-2 max-w-[400px]">
+          <MediaIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <span className="font-medium truncate" title={media.original_name}>
+            {media.original_name}
+          </span>
         </div>
       );
     },
@@ -162,44 +194,6 @@ export const createMediaColumns = (onRefresh: () => void): ColumnDef<MediaWithPr
     cell: ({ row }) => {
       const size = row.getValue('file_size') as number;
       return formatFileSize(size);
-    },
-  },
-  {
-    accessorKey: 'mime_type',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Format" />
-    ),
-    cell: ({ row }) => {
-      const mimeType = row.getValue('mime_type') as string;
-      return (
-        <span className="text-sm text-muted-foreground">
-          {mimeType.split('/')[1].toUpperCase()}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: 'profiles.full_name',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Uploaded By" />
-    ),
-    cell: ({ row }) => {
-      const media = row.original;
-      return (
-        <span className="text-sm">
-          {media.profiles?.full_name || 'Unknown'}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: 'created_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Uploaded" />
-    ),
-    cell: ({ row }) => {
-      const date = row.getValue('created_at') as string;
-      return formatDate(date);
     },
   },
   {

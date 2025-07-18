@@ -35,14 +35,12 @@ import {
   List,
   ListOrdered,
   Merge,
+  Music,
   Quote,
   Rows,
   Split,
   Table as TableIcon,
   Trash2,
-  Music,
-  FileText,
-  Video,
 } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
 import { useCallback, useEffect, useState } from 'react';
@@ -71,9 +69,7 @@ import {
   LayoutExtension,
 } from './layout/layout-extension';
 import { MediaLibraryModal } from '../media/media-library-modal';
-import { MediaUploadDialog } from '../media/media-upload-dialog';
 import { MediaWithProfile } from '@/actions/get-media';
-import { TablesInsert } from '@/types/types_db';
 
 interface EditorProps {
   content?: string;
@@ -94,14 +90,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
-  // Media upload dialog states
-  const [isAudioUploadOpen, setIsAudioUploadOpen] = useState(false);
-  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
-  const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
-  const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
 
-  // State for pending media insertion confirmation
-  const [pendingMediaForInsertion, setPendingMediaForInsertion] = useState<(TablesInsert<'media'> & { id: string })[]>([]);
 
   const editor = useEditor({
     extensions: [
@@ -262,101 +251,9 @@ export default function Editor({ content = '', onChange }: EditorProps) {
     [editor]
   );
 
-  const handleMediaUploadSuccess = useCallback(
-    (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
-      if (uploadedMedia.length === 0) {
-        return;
-      }
 
-      // Reset error state
-      setUploadError(null);
 
-      // Add uploaded media to pending insertion state
-      setPendingMediaForInsertion(prev => [...prev, ...uploadedMedia]);
-    },
-    []
-  );
 
-  const handleInsertPendingMedia = useCallback(
-    (mediaId: string) => {
-      if (!editor) return;
-
-      const mediaToInsert = pendingMediaForInsertion.find(media => media.id === mediaId);
-      if (!mediaToInsert) return;
-
-      // Use the same insertion logic as handleMediaSelect
-      try {
-        switch (mediaToInsert.media_type) {
-          case 'audio':
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).setAudio({
-              src: mediaToInsert.url,
-              title: mediaToInsert.original_name,
-            }).run();
-            break;
-          case 'image':
-            editor
-              .chain()
-              .focus()
-              .setImage({
-                src: mediaToInsert.url,
-                alt: mediaToInsert.alt_text || mediaToInsert.original_name,
-                title: mediaToInsert.original_name,
-              })
-              .run();
-            break;
-          case 'video':
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).setVideo({
-              src: mediaToInsert.url,
-              title: mediaToInsert.original_name,
-            }).run();
-            break;
-          case 'document':
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (editor.chain().focus() as any).setDocument({
-              src: mediaToInsert.url,
-              title: mediaToInsert.original_name,
-              fileType: mediaToInsert.original_name?.split('.').pop()?.toUpperCase(),
-            }).run();
-            break;
-        }
-
-        // Remove the media from pending list after successful insertion
-        setPendingMediaForInsertion(prev => prev.filter(media => media.id !== mediaId));
-      } catch (error) {
-        console.error(`Error inserting ${mediaToInsert.media_type}:`, error);
-        setUploadError(
-          `Failed to insert ${mediaToInsert.media_type}: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`
-        );
-      }
-    },
-    [editor, pendingMediaForInsertion]
-  );
-
-  const handleDismissPendingMedia = useCallback(
-    (mediaId: string) => {
-      setPendingMediaForInsertion(prev => prev.filter(media => media.id !== mediaId));
-    },
-    []
-  );
-
-  const getMediaIcon = (mediaType: string) => {
-    switch (mediaType) {
-      case 'audio':
-        return Music;
-      case 'image':
-        return ImagePlus;
-      case 'video':
-        return Video;
-      case 'document':
-        return FileText;
-      default:
-        return FileText;
-    }
-  };
 
   const toggleDirection = useCallback(() => {
     if (!editor) return;
@@ -775,46 +672,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setIsAudioUploadOpen(true)}
-          disabled={isAudioUploadOpen}
-        >
-          <Music className="h-4 w-4 mr-2" />
-          Audio
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsImageUploadOpen(true)}
-          disabled={isImageUploadOpen}
-        >
-          <ImagePlus className="h-4 w-4 mr-2" />
-          Image
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsVideoUploadOpen(true)}
-          disabled={isVideoUploadOpen}
-        >
-          <Video className="h-4 w-4 mr-2" />
-          Video
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsDocumentUploadOpen(true)}
-          disabled={isDocumentUploadOpen}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Document
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
           onClick={() => setIsMediaLibraryOpen(true)}
         >
           <Music className="h-4 w-4 mr-2" />
@@ -887,82 +744,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         </div>
       )}
 
-      {/* PENDING MEDIA INSERTION CONFIRMATION */}
-      {pendingMediaForInsertion.length > 0 && (
-        <div className="mb-4 space-y-2">
-          {pendingMediaForInsertion.length > 1 && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-green-800">
-                  {pendingMediaForInsertion.length} media files uploaded successfully!
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => {
-                      pendingMediaForInsertion.forEach(media => handleInsertPendingMedia(media.id));
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    Insert All
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPendingMediaForInsertion([])}
-                    className="text-green-700 border-green-300 hover:bg-green-100"
-                  >
-                    Dismiss All
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          {pendingMediaForInsertion.map((media) => {
-            const MediaIcon = getMediaIcon(media.media_type);
-            return (
-              <div key={media.id} className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <MediaIcon className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-green-800">
-                        {media.media_type.charAt(0).toUpperCase() + media.media_type.slice(1)} uploaded successfully!
-                      </p>
-                      <p className="text-sm text-green-700">
-                        {media.original_name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleInsertPendingMedia(media.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Insert into Article
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDismissPendingMedia(media.id)}
-                      className="text-green-700 border-green-300 hover:bg-green-100"
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* EDITOR CONTENT */}
       <EditorContent
@@ -989,31 +770,6 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         title="Select Media"
       />
 
-      {/* Media Upload Dialogs */}
-      <MediaUploadDialog
-        isOpen={isAudioUploadOpen}
-        onClose={() => setIsAudioUploadOpen(false)}
-        onSuccess={handleMediaUploadSuccess}
-        mediaType="audio"
-      />
-      <MediaUploadDialog
-        isOpen={isImageUploadOpen}
-        onClose={() => setIsImageUploadOpen(false)}
-        onSuccess={handleMediaUploadSuccess}
-        mediaType="image"
-      />
-      <MediaUploadDialog
-        isOpen={isVideoUploadOpen}
-        onClose={() => setIsVideoUploadOpen(false)}
-        onSuccess={handleMediaUploadSuccess}
-        mediaType="video"
-      />
-      <MediaUploadDialog
-        isOpen={isDocumentUploadOpen}
-        onClose={() => setIsDocumentUploadOpen(false)}
-        onSuccess={handleMediaUploadSuccess}
-        mediaType="document"
-      />
     </div>
   );
 }

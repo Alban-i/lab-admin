@@ -39,12 +39,6 @@ const MediaClient: React.FC<MediaClientProps> = ({
     }
   };
 
-  const handleUploadSuccess = () => {
-    setIsUploadDialogOpen(false);
-    refreshMedia();
-    toast.success('Media uploaded successfully!');
-  };
-
   const columns = createMediaColumns(refreshMedia);
 
   return (
@@ -105,7 +99,6 @@ const MediaClient: React.FC<MediaClientProps> = ({
       <MediaUploadDialog
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
-        onSuccess={handleUploadSuccess}
         mediaType={mediaType}
       />
     </div>
