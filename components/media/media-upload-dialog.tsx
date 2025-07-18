@@ -226,25 +226,21 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
 
       if (successCount > 0) {
         toast.success(`${successCount} file(s) uploaded successfully`);
+        
+        // Collect uploaded media data for successful uploads and call onSuccess immediately
+        const uploadedMediaData = files
+          .filter(file => file.status === 'success' && file.uploadedMediaData)
+          .map(file => file.uploadedMediaData!);
+        
+        onSuccess(uploadedMediaData);
       }
+      
       if (errorCount > 0) {
         toast.error(`${errorCount} file(s) failed to upload`);
       }
 
-      // Add delay to ensure toast is visible before modal closes
-      setTimeout(() => {
-        if (successCount > 0) {
-          // Collect uploaded media data for successful uploads
-          const uploadedMediaData = files
-            .filter(file => file.status === 'success' && file.uploadedMediaData)
-            .map(file => file.uploadedMediaData!);
-          
-          onSuccess(uploadedMediaData);
-        }
-        
-        setFiles([]);
-        onClose();
-      }, 1500);
+      // Reset files state but keep modal open for user to interact with confirmation
+      setFiles([]);
     } catch (error) {
       toast.error('Upload failed');
     } finally {
@@ -260,6 +256,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   };
 
   const canUpload = files.length > 0 && files.some(file => file.status === 'pending');
+  const hasSuccessfulUploads = files.some(file => file.status === 'success');
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -425,7 +422,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
             onClick={handleClose}
             disabled={isUploading}
           >
-            {isUploading ? 'Uploading...' : 'Cancel'}
+            {isUploading ? 'Uploading...' : hasSuccessfulUploads ? 'Close' : 'Cancel'}
           </Button>
           
           {files.length > 0 && (
@@ -442,6 +439,12 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                 `Upload ${files.filter(f => f.status === 'pending').length} file(s)`
               )}
             </Button>
+          )}
+          
+          {hasSuccessfulUploads && !isUploading && (
+            <div className="text-sm text-green-600 font-medium">
+              Upload complete! Check the editor for insertion options.
+            </div>
           )}
         </DialogFooter>
       </DialogContent>

@@ -59,6 +59,8 @@ import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
 import { CustomAudioExtension } from './audio/custom-audio-extension';
 import CustomImageExtension from './image/custom-image-extension';
+import { CustomVideoExtension } from './video/video-extension';
+import { CustomDocumentExtension } from './document/document-extension';
 // import { PostReference } from './post/static-post-reference';
 // import { PostSelector } from './post/static-post-selector-dialog';
 import { DynamicPostReference } from './post/dynamic-post-reference';
@@ -98,8 +100,10 @@ export default function Editor({ content = '', onChange }: EditorProps) {
   const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
 
+  // State for pending media insertion confirmation
+  const [pendingMediaForInsertion, setPendingMediaForInsertion] = useState<(TablesInsert<'media'> & { id: string })[]>([]);
+
   const editor = useEditor({
-    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         document: false,
@@ -115,6 +119,8 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         allowBase64: true,
       }),
       CustomAudioExtension,
+      CustomVideoExtension,
+      CustomDocumentExtension,
       CharacterCount,
       Table.configure({
         resizable: true,
@@ -207,6 +213,18 @@ export default function Editor({ content = '', onChange }: EditorProps) {
               coordinates.pos,
               view.state.schema.nodes.audio.create(sourceNodeData.attrs)
             );
+          } else if (sourceNode.type.name === 'video') {
+            tr.insert(
+              coordinates.pos,
+              view.state.schema.nodes.video.create(sourceNodeData.attrs)
+            );
+          } else if (sourceNode.type.name === 'customDocument') {
+            tr.insert(
+              coordinates.pos,
+              view.state.schema.nodes.customDocument.create(
+                sourceNodeData.attrs
+              )
+            );
           }
 
           view.dispatch(tr);
@@ -246,101 +264,99 @@ export default function Editor({ content = '', onChange }: EditorProps) {
 
   const handleMediaUploadSuccess = useCallback(
     (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
-      if (!editor || uploadedMedia.length === 0) return;
+      if (uploadedMedia.length === 0) {
+        return;
+      }
 
       // Reset error state
       setUploadError(null);
 
-      console.log('handleMediaUploadSuccess called with:', uploadedMedia);
-
-      // Insert each uploaded media item into the editor immediately
-      uploadedMedia.forEach((media) => {
-        console.log('Processing media:', media);
-
-        try {
-          // Ensure editor has focus before inserting content
-          if (!editor.isFocused) {
-            editor.commands.focus();
-          }
-
-          switch (media.media_type) {
-            case 'audio':
-              console.log(
-                'Inserting audio with src:',
-                media.url,
-                'title:',
-                media.original_name
-              );
-              const audioInserted = editor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: 'audio',
-                  attrs: { src: media.url, title: media.original_name },
-                })
-                .run();
-
-              console.log('Audio insertion result:', audioInserted);
-              if (!audioInserted) {
-                console.error('Failed to insert audio content');
-              }
-              break;
-            case 'image':
-              const imageInserted = editor
-                .chain()
-                .focus()
-                .setImage({
-                  src: media.url,
-                  alt: media.alt_text || media.original_name,
-                  title: media.original_name,
-                })
-                .run();
-
-              if (!imageInserted) {
-                console.error('Failed to insert image content');
-              }
-              break;
-            case 'video':
-              // For now, insert as a link, but this could be extended with a video extension
-              const videoInserted = editor
-                .chain()
-                .focus()
-                .insertContent(
-                  `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-                )
-                .run();
-
-              if (!videoInserted) {
-                console.error('Failed to insert video content');
-              }
-              break;
-            case 'document':
-              // Insert as a link to the document
-              const documentInserted = editor
-                .chain()
-                .focus()
-                .insertContent(
-                  `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-                )
-                .run();
-
-              if (!documentInserted) {
-                console.error('Failed to insert document content');
-              }
-              break;
-          }
-        } catch (error) {
-          console.error('Error inserting media content:', error);
-          setUploadError(
-            `Failed to insert ${media.media_type}: ${
-              error instanceof Error ? error.message : 'Unknown error'
-            }`
-          );
-        }
-      });
+      // Add uploaded media to pending insertion state
+      setPendingMediaForInsertion(prev => [...prev, ...uploadedMedia]);
     },
-    [editor]
+    []
   );
+
+  const handleInsertPendingMedia = useCallback(
+    (mediaId: string) => {
+      if (!editor) return;
+
+      const mediaToInsert = pendingMediaForInsertion.find(media => media.id === mediaId);
+      if (!mediaToInsert) return;
+
+      // Use the same insertion logic as handleMediaSelect
+      try {
+        switch (mediaToInsert.media_type) {
+          case 'audio':
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor.chain().focus() as any).setAudio({
+              src: mediaToInsert.url,
+              title: mediaToInsert.original_name,
+            }).run();
+            break;
+          case 'image':
+            editor
+              .chain()
+              .focus()
+              .setImage({
+                src: mediaToInsert.url,
+                alt: mediaToInsert.alt_text || mediaToInsert.original_name,
+                title: mediaToInsert.original_name,
+              })
+              .run();
+            break;
+          case 'video':
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor.chain().focus() as any).setVideo({
+              src: mediaToInsert.url,
+              title: mediaToInsert.original_name,
+            }).run();
+            break;
+          case 'document':
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (editor.chain().focus() as any).setDocument({
+              src: mediaToInsert.url,
+              title: mediaToInsert.original_name,
+              fileType: mediaToInsert.original_name?.split('.').pop()?.toUpperCase(),
+            }).run();
+            break;
+        }
+
+        // Remove the media from pending list after successful insertion
+        setPendingMediaForInsertion(prev => prev.filter(media => media.id !== mediaId));
+      } catch (error) {
+        console.error(`Error inserting ${mediaToInsert.media_type}:`, error);
+        setUploadError(
+          `Failed to insert ${mediaToInsert.media_type}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+      }
+    },
+    [editor, pendingMediaForInsertion]
+  );
+
+  const handleDismissPendingMedia = useCallback(
+    (mediaId: string) => {
+      setPendingMediaForInsertion(prev => prev.filter(media => media.id !== mediaId));
+    },
+    []
+  );
+
+  const getMediaIcon = (mediaType: string) => {
+    switch (mediaType) {
+      case 'audio':
+        return Music;
+      case 'image':
+        return ImagePlus;
+      case 'video':
+        return Video;
+      case 'document':
+        return FileText;
+      default:
+        return FileText;
+    }
+  };
 
   const toggleDirection = useCallback(() => {
     if (!editor) return;
@@ -394,17 +410,11 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       // Insert different types of media based on their type
       switch (media.media_type) {
         case 'audio':
-          editor
-            .chain()
-            .focus()
-            .insertContent({
-              type: 'audio',
-              attrs: {
-                src: media.url,
-                title: media.original_name,
-              },
-            })
-            .run();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.chain().focus() as any).setAudio({
+            src: media.url,
+            title: media.original_name,
+          }).run();
           break;
         case 'image':
           editor
@@ -418,24 +428,19 @@ export default function Editor({ content = '', onChange }: EditorProps) {
             .run();
           break;
         case 'video':
-          // For now, insert as a simple link, but this could be extended with a video extension
-          editor
-            .chain()
-            .focus()
-            .insertContent(
-              `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-            )
-            .run();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.chain().focus() as any).setVideo({
+            src: media.url,
+            title: media.original_name,
+          }).run();
           break;
         case 'document':
-          // Insert as a link to the document
-          editor
-            .chain()
-            .focus()
-            .insertContent(
-              `<a href="${media.url}" target="_blank">${media.original_name}</a>`
-            )
-            .run();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (editor.chain().focus() as any).setDocument({
+            src: media.url,
+            title: media.original_name,
+            fileType: media.original_name?.split('.').pop()?.toUpperCase(),
+          }).run();
           break;
       }
     },
@@ -882,6 +887,83 @@ export default function Editor({ content = '', onChange }: EditorProps) {
         </div>
       )}
 
+      {/* PENDING MEDIA INSERTION CONFIRMATION */}
+      {pendingMediaForInsertion.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {pendingMediaForInsertion.length > 1 && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-green-800">
+                  {pendingMediaForInsertion.length} media files uploaded successfully!
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      pendingMediaForInsertion.forEach(media => handleInsertPendingMedia(media.id));
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Insert All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPendingMediaForInsertion([])}
+                    className="text-green-700 border-green-300 hover:bg-green-100"
+                  >
+                    Dismiss All
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {pendingMediaForInsertion.map((media) => {
+            const MediaIcon = getMediaIcon(media.media_type);
+            return (
+              <div key={media.id} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <MediaIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-800">
+                        {media.media_type.charAt(0).toUpperCase() + media.media_type.slice(1)} uploaded successfully!
+                      </p>
+                      <p className="text-sm text-green-700">
+                        {media.original_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleInsertPendingMedia(media.id)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Insert into Article
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDismissPendingMedia(media.id)}
+                      className="text-green-700 border-green-300 hover:bg-green-100"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* EDITOR CONTENT */}
       <EditorContent
         editor={editor}
@@ -890,14 +972,14 @@ export default function Editor({ content = '', onChange }: EditorProps) {
       <div className="mt-2 text-sm text-muted-foreground">
         {editor.storage.characterCount.characters()} characters
       </div>
-      <div className="mt-4">
+      {/* <div className="mt-4">
         <h3 className="text-sm font-medium mb-2">Raw HTML</h3>
         <pre className="bg-muted p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md">
           <code className="whitespace-pre-wrap">
             {editor.getHTML().replace(/></g, '>\n<')}
           </code>
         </pre>
-      </div>
+      </div> */}
 
       {/* Media Library Modal */}
       <MediaLibraryModal

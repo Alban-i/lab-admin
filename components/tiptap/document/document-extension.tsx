@@ -1,14 +1,14 @@
 import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import AudioNodeView from './audio-node-view';
+import DocumentNodeView from './document-node-view';
 
-export interface AudioOptions {
+export interface DocumentOptions {
   inline: boolean;
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomAudioExtension = Node.create<AudioOptions>({
-  name: 'audio',
+export const CustomDocumentExtension = Node.create<DocumentOptions>({
+  name: 'customDocument',
   group: 'block',
   inline: false,
   atom: true,
@@ -26,27 +26,40 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
     return {
       src: { default: null },
       title: { default: null },
+      fileType: { default: null },
+      fileSize: { default: null },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'audio[data-audio]' }];
+    return [{ tag: 'div[data-custom-document]' }];
   },
 
   renderHTML({ node, HTMLAttributes }) {
     return [
-      'audio',
+      'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-audio': true,
-        src: node.attrs.src,
-        title: node.attrs.title,
+        'data-custom-document': true,
+        'data-src': node.attrs.src,
+        'data-title': node.attrs.title,
+        'data-file-type': node.attrs.fileType,
+        'data-file-size': node.attrs.fileSize,
       }),
+      [
+        'a',
+        {
+          href: node.attrs.src,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+        node.attrs.title || 'Download Document',
+      ],
     ];
   },
 
   addCommands() {
     return {
-      setAudio:
+      setDocument:
         (options) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
@@ -54,7 +67,7 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
             attrs: options,
           });
         },
-      deleteAudio:
+      deleteDocument:
         () =>
         ({ commands }: CommandProps) => {
           return commands.deleteSelection();
@@ -63,6 +76,6 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView);
+    return ReactNodeViewRenderer(DocumentNodeView);
   },
 });

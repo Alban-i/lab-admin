@@ -26,7 +26,7 @@ export default function RootLayout({
             <BreadcrumbClient />
           </div>
         </header>
-        <div className="">{children}</div>
+        <div className="px-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

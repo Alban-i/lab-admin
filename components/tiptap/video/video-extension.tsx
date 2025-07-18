@@ -1,14 +1,14 @@
 import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
-import AudioNodeView from './audio-node-view';
+import VideoNodeView from './video-node-view';
 
-export interface AudioOptions {
+export interface VideoOptions {
   inline: boolean;
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomAudioExtension = Node.create<AudioOptions>({
-  name: 'audio',
+export const CustomVideoExtension = Node.create<VideoOptions>({
+  name: 'video',
   group: 'block',
   inline: false,
   atom: true,
@@ -26,27 +26,31 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
     return {
       src: { default: null },
       title: { default: null },
+      poster: { default: null },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'audio[data-audio]' }];
+    return [{ tag: 'video[data-video]' }];
   },
 
   renderHTML({ node, HTMLAttributes }) {
     return [
-      'audio',
+      'video',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-audio': true,
+        'data-video': true,
         src: node.attrs.src,
         title: node.attrs.title,
+        poster: node.attrs.poster,
+        controls: true,
+        preload: 'metadata',
       }),
     ];
   },
 
   addCommands() {
     return {
-      setAudio:
+      setVideo:
         (options) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
@@ -54,7 +58,7 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
             attrs: options,
           });
         },
-      deleteAudio:
+      deleteVideo:
         () =>
         ({ commands }: CommandProps) => {
           return commands.deleteSelection();
@@ -63,6 +67,6 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView);
+    return ReactNodeViewRenderer(VideoNodeView);
   },
 });

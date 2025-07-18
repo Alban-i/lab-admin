@@ -4,7 +4,7 @@ const nextConfig = {
     includePaths: ['./styles', './components'],
   },
   images: {
-    domains: ['res.cloudinary.com'],
+    domains: ['res.cloudinary.com', 'oonuyqodigregozwqjsn.supabase.co'],
   },
   experimental: {
     serverActions: {
