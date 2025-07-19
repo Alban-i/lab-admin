@@ -13,6 +13,7 @@ export type MediaUpdateData = {
   id: string;
   alt_text?: string;
   description?: string;
+  transcription?: string;
 };
 
 export const updateMedia = async (updateData: MediaUpdateData): Promise<MediaUpdateResult> => {
@@ -64,6 +65,7 @@ export const updateMedia = async (updateData: MediaUpdateData): Promise<MediaUpd
     const updateFields: TablesUpdate<'media'> = {
       alt_text: updateData.alt_text,
       description: updateData.description,
+      transcription: updateData.transcription,
       updated_at: new Date().toISOString(),
     };
 

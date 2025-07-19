@@ -38,8 +38,7 @@ import {
   Upload
 } from 'lucide-react';
 import { MediaWithProfile } from '@/actions/media/get-media';
-import { updateMedia } from '@/actions/media/update-media';
-import { deleteMedia } from '@/actions/media/delete-media';
+import { useUpdateMediaMutation, useDeleteMediaMutation } from '@/actions/media/media-queries';
 import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { toast } from 'sonner';
 import NextImage from 'next/image';
@@ -47,6 +46,7 @@ import NextImage from 'next/image';
 const mediaFormSchema = z.object({
   alt_text: z.string().optional(),
   description: z.string().optional(),
+  transcription: z.string().optional(),
 });
 
 type MediaFormData = z.infer<typeof mediaFormSchema>;
@@ -96,56 +96,40 @@ export const MediaForm: React.FC<MediaFormProps> = ({
   onDelete 
 }) => {
   const router = useRouter();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  
+  const updateMutation = useUpdateMediaMutation();
+  const deleteMutation = useDeleteMediaMutation();
 
   const form = useForm<MediaFormData>({
     resolver: zodResolver(mediaFormSchema),
     defaultValues: {
       alt_text: media.alt_text || '',
       description: media.description || '',
+      transcription: media.transcription || '',
     },
   });
 
   const handleSubmit = async (data: MediaFormData) => {
-    setIsUpdating(true);
-    try {
-      const result = await updateMedia({
-        id: media.id,
-        alt_text: data.alt_text,
-        description: data.description,
-      });
-
-      if (result.success) {
-        toast.success('Media updated successfully');
+    updateMutation.mutate({
+      id: media.id,
+      alt_text: data.alt_text,
+      description: data.description,
+      transcription: data.transcription,
+    }, {
+      onSuccess: () => {
         onUpdate?.();
-      } else {
-        toast.error(result.error || 'Failed to update media');
       }
-    } catch (error) {
-      toast.error('An error occurred while updating media');
-    } finally {
-      setIsUpdating(false);
-    }
+    });
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const result = await deleteMedia(media.id);
-      if (result.success) {
-        toast.success('Media deleted successfully');
+    deleteMutation.mutate(media.id, {
+      onSuccess: () => {
         onDelete?.();
         router.push(`/media/${media.media_type}`);
-      } else {
-        toast.error(result.error || 'Failed to delete media');
       }
-    } catch (error) {
-      toast.error('An error occurred while deleting media');
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   const handleDownload = () => {
@@ -264,10 +248,10 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  disabled={isDeleting}
+                  disabled={deleteMutation.isPending}
                   className="bg-destructive text-destructive-foreground"
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -286,104 +270,119 @@ export const MediaForm: React.FC<MediaFormProps> = ({
           </CardContent>
         </Card>
 
-        {/* Edit Form */}
+        {/* File Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Edit Media</CardTitle>
-            <CardDescription>
-              Update the metadata for this media file
-            </CardDescription>
+            <CardTitle>File Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="alt_text">Alt Text</Label>
-                <Input
-                  id="alt_text"
-                  {...form.register('alt_text')}
-                  placeholder="Descriptive text for accessibility"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Helps screen readers and improves accessibility
-                </p>
+            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+              <div className="flex items-center gap-2">
+                <File className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Original Name</p>
+                  <p className="text-sm text-muted-foreground">{media.original_name}</p>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  {...form.register('description')}
-                  placeholder="Optional description of the media"
-                  rows={3}
-                />
+              
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="capitalize">
+                  {media.media_type}
+                </Badge>
+                <div>
+                  <p className="text-sm font-medium">Type</p>
+                  <p className="text-sm text-muted-foreground">{media.mime_type}</p>
+                </div>
               </div>
-
-              <Button 
-                type="submit" 
-                disabled={isUpdating}
-                className="w-full gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {isUpdating ? 'Updating...' : 'Update Media'}
-              </Button>
-            </form>
+              
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Size</p>
+                  <p className="text-sm text-muted-foreground">{formatFileSize(media.file_size)}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Uploaded</p>
+                  <p className="text-sm text-muted-foreground">{media.created_at ? formatDate(media.created_at) : 'Unknown'}</p>
+                </div>
+              </div>
+              
+              {media.profiles && (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Uploaded by</p>
+                    <p className="text-sm text-muted-foreground">
+                      {media.profiles.full_name || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* File Information */}
+      {/* Edit Form */}
       <Card>
         <CardHeader>
-          <CardTitle>File Information</CardTitle>
+          <CardTitle>Edit Media</CardTitle>
+          <CardDescription>
+            Update the metadata for this media file
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <File className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Original Name</p>
-                <p className="text-sm text-muted-foreground">{media.original_name}</p>
-              </div>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="alt_text">Alt Text</Label>
+              <Input
+                id="alt_text"
+                {...form.register('alt_text')}
+                placeholder="Descriptive text for accessibility"
+              />
+              <p className="text-xs text-muted-foreground">
+                Helps screen readers and improves accessibility
+              </p>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="capitalize">
-                {media.media_type}
-              </Badge>
-              <div>
-                <p className="text-sm font-medium">Type</p>
-                <p className="text-sm text-muted-foreground">{media.mime_type}</p>
-              </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                {...form.register('description')}
+                placeholder="Optional description of the media"
+                rows={3}
+              />
             </div>
-            
-            <div className="flex items-center gap-2">
-              <HardDrive className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Size</p>
-                <p className="text-sm text-muted-foreground">{formatFileSize(media.file_size)}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Uploaded</p>
-                <p className="text-sm text-muted-foreground">{media.created_at ? formatDate(media.created_at) : 'Unknown'}</p>
-              </div>
-            </div>
-            
-            {media.profiles && (
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Uploaded by</p>
-                  <p className="text-sm text-muted-foreground">
-                    {media.profiles.full_name || 'Unknown'}
-                  </p>
-                </div>
+
+            {(media.media_type === 'audio' || media.media_type === 'video') && (
+              <div className="space-y-2">
+                <Label htmlFor="transcription">Transcription</Label>
+                <Textarea
+                  id="transcription"
+                  {...form.register('transcription')}
+                  placeholder="Optional transcription or notes for this audio/video"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add transcription text or notes for this audio/video content
+                </p>
               </div>
             )}
-          </div>
+
+            <Button 
+              type="submit" 
+              disabled={updateMutation.isPending}
+              className="w-full gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {updateMutation.isPending ? 'Updating...' : 'Update Media'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

@@ -32,7 +32,7 @@ import {
   FileText 
 } from 'lucide-react';
 import Link from 'next/link';
-import { deleteMedia } from '@/actions/media/delete-media';
+import { useDeleteMediaMutation } from '@/actions/media/media-queries';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -68,8 +68,8 @@ const formatDate = (dateString: string) => {
 };
 
 const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh: () => void }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const deleteMutation = useDeleteMediaMutation();
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -82,21 +82,12 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const result = await deleteMedia(media.id);
-      if (result.success) {
-        toast.success('Media deleted successfully');
+    deleteMutation.mutate(media.id, {
+      onSuccess: () => {
         onRefresh();
-      } else {
-        toast.error(result.error || 'Failed to delete media');
+        setShowDeleteDialog(false);
       }
-    } catch (error) {
-      toast.error('An error occurred while deleting media');
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
-    }
+    });
   };
 
   return (
@@ -140,10 +131,10 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground"
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
