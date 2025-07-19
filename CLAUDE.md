@@ -73,6 +73,7 @@ Extensions are in `/extensions/` and handle both rendering and data persistence.
 - Form validation using Zod schemas
 - Error handling with toast notifications
 - Responsive design with TailwindCSS breakpoints
+- Use `@hooks/use-wait.ts` instead of `setTimeout` for delays
 
 ## Environment Requirements
 

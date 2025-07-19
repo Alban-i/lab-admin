@@ -34,11 +34,13 @@ import {
   Calendar,
   User,
   HardDrive,
-  File
+  File,
+  Upload
 } from 'lucide-react';
-import { MediaWithProfile } from '@/actions/get-media';
-import { updateMedia } from '@/actions/update-media';
-import { deleteMedia } from '@/actions/delete-media';
+import { MediaWithProfile } from '@/actions/media/get-media';
+import { updateMedia } from '@/actions/media/update-media';
+import { deleteMedia } from '@/actions/media/delete-media';
+import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { toast } from 'sonner';
 import NextImage from 'next/image';
 
@@ -96,6 +98,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   const form = useForm<MediaFormData>({
     resolver: zodResolver(mediaFormSchema),
@@ -153,6 +156,10 @@ export const MediaForm: React.FC<MediaFormProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleUploadSuccess = () => {
+    // Upload completed successfully - user can manually close the dialog
   };
 
   const renderMediaPreview = () => {
@@ -225,16 +232,24 @@ export const MediaForm: React.FC<MediaFormProps> = ({
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
+            onClick={() => setIsUploadDialogOpen(true)}
+            className="gap-2"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload New
+          </Button>
+          <Button 
+            variant="outline" 
             onClick={handleDownload}
             className="gap-2"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-3.5 w-3.5" />
             Download
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="gap-2">
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
                 Delete
               </Button>
             </AlertDialogTrigger>
@@ -371,6 +386,14 @@ export const MediaForm: React.FC<MediaFormProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Upload Dialog */}
+      <MediaUploadDialog
+        isOpen={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+        mediaType={media.media_type as 'audio' | 'image' | 'video' | 'document'}
+        onSuccess={handleUploadSuccess}
+      />
     </div>
   );
 };

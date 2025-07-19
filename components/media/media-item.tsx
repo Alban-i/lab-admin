@@ -9,13 +9,14 @@ import {
   FileText, 
   Check
 } from 'lucide-react';
-import { MediaWithProfile } from '@/actions/get-media';
+import { MediaWithProfile } from '@/actions/media/get-media';
 import { cn } from '@/lib/utils';
 import { TableCell, TableRow } from '@/components/ui/table';
 
 interface MediaItemProps {
   media: MediaWithProfile;
   isSelected?: boolean;
+  isHighlighted?: boolean;
   onSelect: () => void;
   onRefresh: () => void;
 }
@@ -23,6 +24,7 @@ interface MediaItemProps {
 export const MediaItem: React.FC<MediaItemProps> = ({
   media,
   isSelected = false,
+  isHighlighted = false,
   onSelect,
   onRefresh,
 }) => {
@@ -57,7 +59,8 @@ export const MediaItem: React.FC<MediaItemProps> = ({
   return (
     <TableRow className={cn(
       "hover:bg-muted/50 transition-colors",
-      isSelected && "bg-muted"
+      isSelected && "bg-muted",
+      isHighlighted && "bg-green-50 border-l-4 border-green-500"
     )}>
       <TableCell className="font-medium">
         <div className="flex items-center gap-3">

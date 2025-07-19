@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MediaWithProfile } from '@/actions/get-media';
+import { MediaWithProfile } from '@/actions/media/get-media';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { 
   MoreHorizontal, 
@@ -32,7 +32,7 @@ import {
   FileText 
 } from 'lucide-react';
 import Link from 'next/link';
-import { deleteMedia } from '@/actions/delete-media';
+import { deleteMedia } from '@/actions/media/delete-media';
 import { toast } from 'sonner';
 import { useState } from 'react';
 

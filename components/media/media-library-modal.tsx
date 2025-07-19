@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,11 +21,16 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import { getMedia, MediaWithProfile, MediaFilters } from '@/actions/get-media';
+import { MediaWithProfile, MediaFilters } from '@/actions/media/get-media';
 import { MediaItem } from './media-item';
 import { MediaUploadDialog } from './media-upload-dialog';
 import { toast } from 'sonner';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablesInsert } from '@/types/types_db';
+import wait from '@/hooks/use-wait';
+import { useMediaQuery } from '@/actions/media/media-queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { mediaKeys } from '@/actions/media/media-api';
 
 export interface MediaLibraryModalProps {
   isOpen: boolean;
@@ -44,16 +49,34 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
   title = 'Media Library',
   multiSelect = false,
 }) => {
-  const [media, setMedia] = useState<MediaWithProfile[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>(mediaType || 'all');
   const [selectedMedia, setSelectedMedia] = useState<MediaWithProfile[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [highlightedMediaIds, setHighlightedMediaIds] = useState<Set<string>>(new Set());
   
   const itemsPerPage = 20;
+
+  // Memoize filters to prevent unnecessary re-renders
+  const filters = useMemo((): MediaFilters => ({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+    search: searchTerm || undefined,
+    mediaType: selectedType && selectedType !== 'all' ? selectedType as 'audio' | 'image' | 'video' | 'document' : undefined,
+  }), [currentPage, searchTerm, selectedType]);
+
+  // Use TanStack Query for media fetching
+  const { 
+    data: mediaResult, 
+    isLoading, 
+    error, 
+    isError 
+  } = useMediaQuery(filters);
+
+  const media = mediaResult?.data || [];
+  const totalCount = mediaResult?.count || 0;
 
   const mediaTypeIcons = {
     audio: Music,
@@ -62,47 +85,27 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
     document: FileText,
   };
 
-  const fetchMedia = async (page: number = 1, search?: string, type?: string) => {
-    setLoading(true);
-    try {
-      const filters: MediaFilters = {
-        limit: itemsPerPage,
-        offset: (page - 1) * itemsPerPage,
-        search: search || undefined,
-        mediaType: type && type !== 'all' ? type as 'audio' | 'image' | 'video' | 'document' : undefined,
-      };
-
-      const result = await getMedia(filters);
-      if (result.error) {
-        toast.error('Failed to load media');
-        return;
-      }
-
-      setMedia(result.data);
-      setTotalCount(result.count);
-    } catch (error) {
+  // Handle errors from TanStack Query
+  useEffect(() => {
+    if (isError && error) {
       console.error('Error fetching media:', error);
       toast.error('Failed to load media');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isError, error]);
 
+  // Reset page when filters change
   useEffect(() => {
-    if (isOpen) {
-      fetchMedia(1, searchTerm, selectedType);
+    if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [isOpen, searchTerm, selectedType]);
+  }, [searchTerm, selectedType, currentPage]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
   };
 
   const handleTypeChange = (value: string) => {
     setSelectedType(value);
-    setCurrentPage(1);
   };
 
   const handleMediaSelect = (mediaItem: MediaWithProfile) => {
@@ -129,9 +132,24 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    fetchMedia(newPage, searchTerm, selectedType);
   };
 
+  const handleUploadSuccess = async (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => {
+    // Invalidate all media queries to refresh the data
+    queryClient.invalidateQueries({ queryKey: mediaKeys.all });
+    
+    // Reset to page 1
+    setCurrentPage(1);
+    
+    // Highlight the newly uploaded media
+    const newMediaIds = new Set(uploadedMedia.map(media => media.id));
+    setHighlightedMediaIds(newMediaIds);
+    
+    // Remove highlighting after 3 seconds
+    wait(3000).then(() => {
+      setHighlightedMediaIds(new Set());
+    });
+  };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -190,7 +208,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
 
             {/* Media Table */}
             <ScrollArea className="flex-1">
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
@@ -215,8 +233,9 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                         key={mediaItem.id}
                         media={mediaItem}
                         isSelected={selectedMedia.some(item => item.id === mediaItem.id)}
+                        isHighlighted={highlightedMediaIds.has(mediaItem.id)}
                         onSelect={() => handleMediaSelect(mediaItem)}
-                        onRefresh={() => fetchMedia(currentPage, searchTerm, selectedType)}
+                        onRefresh={() => queryClient.invalidateQueries({ queryKey: mediaKeys.all })}
                       />
                     ))}
                   </TableBody>
@@ -275,6 +294,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
         mediaType={mediaType}
+        onSuccess={handleUploadSuccess}
       />
     </>
   );

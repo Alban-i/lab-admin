@@ -1,4 +1,4 @@
-import { getMediaByType } from '@/actions/get-media';
+import { getMediaByType } from '@/actions/media/get-media';
 import MediaClient from '../components/media-client';
 
 export default async function AudioPage() {

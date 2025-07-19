@@ -18,10 +18,10 @@ import {
   FileText, 
   AlertCircle,
   Check,
-  Loader2,
-  CheckCircle
+  Loader2
 } from 'lucide-react';
-import { uploadMedia, MediaUploadData } from '@/actions/upload-media';
+import { MediaUploadData } from '@/actions/media/upload-media';
+import { useUploadMediaMutation } from '@/actions/media/media-queries';
 import { TablesInsert } from '@/types/types_db';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -53,7 +53,8 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [showSuccessState, setShowSuccessState] = useState(false);
+  
+  const uploadMutation = useUploadMediaMutation({ showToast: false });
 
   const getMediaTypeFromFile = useCallback((file: File): 'audio' | 'image' | 'video' | 'document' => {
     if (mediaType) return mediaType;
@@ -175,17 +176,13 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
         updateFileData(index, 'progress', (prev: number) => Math.min(prev + 10, 90));
       }, 200);
 
-      const result = await uploadMedia(uploadData);
+      // Use mutateAsync with { throwOnError: false } to prevent individual error toasts
+      const result = await uploadMutation.mutateAsync(uploadData);
       clearInterval(progressInterval);
 
-      if (result.success && result.data) {
-        updateFileData(index, 'status', 'success');
-        updateFileData(index, 'progress', 100);
-        updateFileData(index, 'uploadedMediaData', result.data);
-      } else {
-        updateFileData(index, 'status', 'error');
-        updateFileData(index, 'error', result.error || 'Upload failed');
-      }
+      updateFileData(index, 'status', 'success');
+      updateFileData(index, 'progress', 100);
+      updateFileData(index, 'uploadedMediaData', result);
     } catch (error) {
       // Clear progress interval if it exists
       if (progressInterval) {
@@ -226,8 +223,16 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
       const successCount = files.filter(file => file.status === 'success').length;
       const errorCount = files.filter(file => file.status === 'error').length;
 
+      // Handle success cases
       if (successCount > 0) {
-        toast.success(`${successCount} file(s) uploaded successfully`);
+        // Show appropriate success toast
+        if (pendingFiles.length === 1) {
+          toast.success('Media uploaded successfully');
+        } else if (errorCount === 0) {
+          toast.success(`${successCount} file(s) uploaded successfully`);
+        } else {
+          toast.success(`${successCount} of ${pendingFiles.length} file(s) uploaded successfully`);
+        }
         
         // Call onSuccess callback with uploaded media data
         const uploadedMedia = files
@@ -238,19 +243,19 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
           onSuccess(uploadedMedia);
         }
         
-        // Show success state
-        setShowSuccessState(true);
-        
-        // Auto-close modal after successful upload
-        setTimeout(() => {
-          setFiles([]);
-          setShowSuccessState(false);
-          onClose();
-        }, 2000); // Longer delay to show success state
+        // Call onSuccess callback if uploads succeeded
+        if (errorCount === 0) {
+          // Reset files after successful upload
+          setTimeout(() => {
+            setFiles([]);
+          }, 1000);
+        }
       }
       
+      // Handle error cases
       if (errorCount > 0) {
         toast.error(`${errorCount} file(s) failed to upload`);
+        
         // Only reset files if there were no successful uploads
         if (successCount === 0) {
           setFiles([]);
@@ -266,13 +271,11 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   const handleClose = () => {
     if (!isUploading) {
       setFiles([]);
-      setShowSuccessState(false);
       onClose();
     }
   };
 
   const canUpload = files.length > 0 && files.some(file => file.status === 'pending');
-  const hasSuccessfulUploads = files.some(file => file.status === 'success');
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -282,20 +285,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          {showSuccessState ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <CheckCircle className="h-16 w-16 text-green-600" />
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold text-green-600">Upload Successful!</h3>
-                <p className="text-sm text-muted-foreground">
-                  {files.filter(file => file.status === 'success').length} file(s) uploaded successfully
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Closing automatically...
-                </p>
-              </div>
-            </div>
-          ) : files.length === 0 ? (
+          {files.length === 0 ? (
             <div
               className={cn(
                 "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
@@ -451,7 +441,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
             onClick={handleClose}
             disabled={isUploading}
           >
-            {isUploading ? 'Uploading...' : hasSuccessfulUploads ? 'Close' : 'Cancel'}
+            {isUploading ? 'Uploading...' : 'Close'}
           </Button>
           
           {files.length > 0 && (

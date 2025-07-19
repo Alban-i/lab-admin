@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { PlusCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MediaWithProfile, getMediaByType } from '@/actions/get-media';
+import { MediaWithProfile } from '@/actions/media/get-media';
 import { MediaDataTable } from './media-data-table';
 import { createMediaColumns } from './media-columns';
 import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { RevalidateButton } from '@/components/revalidate-button';
 import { toast } from 'sonner';
+import { useMediaByTypeQuery } from '@/actions/media/media-queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { mediaKeys } from '@/actions/media/media-api';
 
 interface MediaClientProps {
   initialMedia: MediaWithProfile[];
@@ -23,23 +26,20 @@ const MediaClient: React.FC<MediaClientProps> = ({
   title,
   revalidatePath 
 }) => {
-  const [media, setMedia] = useState<MediaWithProfile[]>(initialMedia);
+  const queryClient = useQueryClient();
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const refreshMedia = async () => {
-    setLoading(true);
-    try {
-      const freshMedia = await getMediaByType(mediaType);
-      setMedia(freshMedia);
-    } catch (error) {
-      toast.error('Failed to refresh media');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use TanStack Query with initial data from SSR
+  const { data: media = [], isLoading, error } = useMediaByTypeQuery(mediaType);
 
-  const columns = createMediaColumns(refreshMedia);
+  // Use initial data if available and query hasn't loaded yet
+  const displayMedia = media.length > 0 ? media : initialMedia;
+
+  const refreshMedia = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: mediaKeys.byType(mediaType) });
+  }, [queryClient, mediaType]);
+
+  const columns = useMemo(() => createMediaColumns(refreshMedia), [refreshMedia]);
 
   return (
     <div className="grid gap-3 px-4">
@@ -64,18 +64,18 @@ const MediaClient: React.FC<MediaClientProps> = ({
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
-          <div className="text-2xl font-bold">{media.length}</div>
+          <div className="text-2xl font-bold">{displayMedia.length}</div>
           <p className="text-sm text-muted-foreground">Total Files</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="text-2xl font-bold">
-            {(media.reduce((acc, item) => acc + item.file_size, 0) / 1024 / 1024).toFixed(1)}MB
+            {(displayMedia.reduce((acc, item) => acc + item.file_size, 0) / 1024 / 1024).toFixed(1)}MB
           </div>
           <p className="text-sm text-muted-foreground">Total Size</p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="text-2xl font-bold">
-            {media.filter(item => {
+            {displayMedia.filter(item => {
               if (!item.created_at) return false;
               const uploadDate = new Date(item.created_at);
               const oneWeekAgo = new Date();
@@ -90,7 +90,7 @@ const MediaClient: React.FC<MediaClientProps> = ({
       {/* Data Table */}
       <MediaDataTable 
         columns={columns} 
-        data={media} 
+        data={displayMedia} 
         searchPlaceholder={`Search ${title.toLowerCase()}...`}
         mediaType={mediaType}
       />
@@ -100,6 +100,7 @@ const MediaClient: React.FC<MediaClientProps> = ({
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
         mediaType={mediaType}
+        onSuccess={() => refreshMedia()}
       />
     </div>
   );

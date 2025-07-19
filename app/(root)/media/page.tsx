@@ -1,4 +1,4 @@
-import { getMedia } from '@/actions/get-media';
+import { getMedia } from '@/actions/media/get-media';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

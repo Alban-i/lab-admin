@@ -1,4 +1,4 @@
-import { getMediaById } from '@/actions/get-media';
+import { getMediaById } from '@/actions/media/get-media';
 import { MediaForm } from '../../components/media-form';
 import { notFound } from 'next/navigation';
 

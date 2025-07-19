@@ -69,7 +69,7 @@ import {
   LayoutExtension,
 } from './layout/layout-extension';
 import { MediaLibraryModal } from '../media/media-library-modal';
-import { MediaWithProfile } from '@/actions/get-media';
+import { MediaWithProfile } from '@/actions/media/get-media';
 
 interface EditorProps {
   content?: string;
