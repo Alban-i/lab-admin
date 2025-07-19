@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Wand2 } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import { RevalidateButton } from '@/components/revalidate-button';
+import { UsedMediaCard } from '@/components/media/used-media-card';
 
 const initialData = {
   title: '',
@@ -516,6 +517,14 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 </CardContent>
               </Card>
 
+              {/* USED MEDIA */}
+              <UsedMediaCard 
+                articleId={defaultValues.id}
+                onMediaRemoved={() => {
+                  // Refresh can be added here if needed
+                }}
+              />
+
               {/* COVER IMAGE */}
               <Card>
                 <CardHeader>
@@ -555,7 +564,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                 <CardTitle>Content</CardTitle>
               </CardHeader>
               <CardContent>
-                <Editor content={content} onChange={setContent} />
+                <Editor 
+                  content={content} 
+                  onChange={setContent}
+                  articleId={defaultValues.id}
+                />
               </CardContent>
             </Card>
           </fieldset>

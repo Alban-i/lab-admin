@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_media: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          id: string
+          media_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          id?: string
+          media_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          id?: string
+          media_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_media_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_tags: {
         Row: {
           article_id: string
@@ -241,11 +277,22 @@ export type Database = {
       media: {
         Row: {
           alt_text: string | null
+          audio_album: string | null
+          audio_album_artist: string | null
+          audio_artist: string | null
+          audio_comment: string | null
+          audio_composer: string | null
+          audio_duration: number | null
+          audio_genre: string | null
+          audio_title: string | null
+          audio_track_number: string | null
+          audio_year: string | null
           created_at: string | null
           description: string | null
           file_name: string
           file_path: string
           file_size: number
+          has_cover_art: boolean | null
           id: string
           media_type: string
           mime_type: string
@@ -257,11 +304,22 @@ export type Database = {
         }
         Insert: {
           alt_text?: string | null
+          audio_album?: string | null
+          audio_album_artist?: string | null
+          audio_artist?: string | null
+          audio_comment?: string | null
+          audio_composer?: string | null
+          audio_duration?: number | null
+          audio_genre?: string | null
+          audio_title?: string | null
+          audio_track_number?: string | null
+          audio_year?: string | null
           created_at?: string | null
           description?: string | null
           file_name: string
           file_path: string
           file_size: number
+          has_cover_art?: boolean | null
           id?: string
           media_type: string
           mime_type: string
@@ -273,11 +331,22 @@ export type Database = {
         }
         Update: {
           alt_text?: string | null
+          audio_album?: string | null
+          audio_album_artist?: string | null
+          audio_artist?: string | null
+          audio_comment?: string | null
+          audio_composer?: string | null
+          audio_duration?: number | null
+          audio_genre?: string | null
+          audio_title?: string | null
+          audio_track_number?: string | null
+          audio_year?: string | null
           created_at?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
           file_size?: number
+          has_cover_art?: boolean | null
           id?: string
           media_type?: string
           mime_type?: string

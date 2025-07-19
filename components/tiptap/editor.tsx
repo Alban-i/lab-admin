@@ -70,10 +70,14 @@ import {
 } from './layout/layout-extension';
 import { MediaLibraryModal } from '../media/media-library-modal';
 import { MediaWithProfile } from '@/actions/media/get-media';
+import { addArticleMedia } from '@/actions/media/add-article-media';
+import { toast } from 'sonner';
 
 interface EditorProps {
   content?: string;
   onChange?: (content: string) => void;
+  articleId?: string;
+  onMediaAdded?: () => void;
 }
 
 interface UploadResult {
@@ -84,7 +88,7 @@ interface UploadResult {
     | string;
 }
 
-export default function Editor({ content = '', onChange }: EditorProps) {
+export default function Editor({ content = '', onChange, articleId, onMediaAdded }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -301,7 +305,7 @@ export default function Editor({ content = '', onChange }: EditorProps) {
   }, [editor]);
 
   const handleMediaSelect = useCallback(
-    (media: MediaWithProfile) => {
+    async (media: MediaWithProfile) => {
       if (!editor) return;
 
       // Insert different types of media based on their type
@@ -340,8 +344,22 @@ export default function Editor({ content = '', onChange }: EditorProps) {
           }).run();
           break;
       }
+
+      // Create article-media relationship if articleId exists
+      if (articleId) {
+        try {
+          const result = await addArticleMedia(articleId, media.id);
+          if (result.error) {
+            toast.error('Failed to create media relationship: ' + result.error);
+          } else {
+            onMediaAdded?.();
+          }
+        } catch (error) {
+          toast.error('Failed to create media relationship');
+        }
+      }
     },
-    [editor]
+    [editor, articleId, onMediaAdded]
   );
 
   if (!editor || !isMounted) {

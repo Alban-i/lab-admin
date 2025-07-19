@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +36,10 @@ import {
   User,
   HardDrive,
   File,
-  Upload
+  Upload,
+  Disc,
+  Clock,
+  Mic
 } from 'lucide-react';
 import { MediaWithProfile } from '@/actions/media/get-media';
 import { useUpdateMediaMutation, useDeleteMediaMutation } from '@/actions/media/media-queries';
@@ -49,7 +53,21 @@ const mediaFormSchema = z.object({
   transcription: z.string().optional(),
 });
 
+const audioMetadataSchema = z.object({
+  audio_title: z.string().optional(),
+  audio_artist: z.string().optional(),
+  audio_album: z.string().optional(),
+  audio_genre: z.string().optional(),
+  audio_year: z.string().regex(/^\d{4}$/, 'Year must be 4 digits').optional().or(z.literal('')),
+  audio_track_number: z.string().regex(/^\d+$/, 'Track number must be a number').optional().or(z.literal('')),
+  audio_album_artist: z.string().optional(),
+  audio_composer: z.string().optional(),
+  audio_comment: z.string().optional(),
+  update_file: z.boolean(),
+});
+
 type MediaFormData = z.infer<typeof mediaFormSchema>;
+type AudioMetadataFormData = z.infer<typeof audioMetadataSchema>;
 
 interface MediaFormProps {
   media: MediaWithProfile;
@@ -97,6 +115,8 @@ export const MediaForm: React.FC<MediaFormProps> = ({
 }) => {
   const router = useRouter();
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
+  const [isUpdatingAudioMetadata, setIsUpdatingAudioMetadata] = useState(false);
   
   const updateMutation = useUpdateMediaMutation();
   const deleteMutation = useDeleteMediaMutation();
@@ -110,6 +130,22 @@ export const MediaForm: React.FC<MediaFormProps> = ({
     },
   });
 
+  const audioForm = useForm<AudioMetadataFormData>({
+    resolver: zodResolver(audioMetadataSchema),
+    defaultValues: {
+      audio_title: media.audio_title || '',
+      audio_artist: media.audio_artist || '',
+      audio_album: media.audio_album || '',
+      audio_genre: media.audio_genre || '',
+      audio_year: media.audio_year || '',
+      audio_track_number: media.audio_track_number || '',
+      audio_album_artist: media.audio_album_artist || '',
+      audio_composer: media.audio_composer || '',
+      audio_comment: media.audio_comment || '',
+      update_file: true,
+    },
+  });
+
   const handleSubmit = async (data: MediaFormData) => {
     updateMutation.mutate({
       id: media.id,
@@ -118,7 +154,11 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       transcription: data.transcription,
     }, {
       onSuccess: () => {
+        toast.success('Media updated successfully');
         onUpdate?.();
+      },
+      onError: () => {
+        toast.error('Failed to update media');
       }
     });
   };
@@ -144,6 +184,121 @@ export const MediaForm: React.FC<MediaFormProps> = ({
 
   const handleUploadSuccess = () => {
     // Upload completed successfully - user can manually close the dialog
+  };
+
+  const handleExtractMetadata = async () => {
+    console.log('🔍 Extract metadata clicked for media:', media.id);
+    if (media.media_type !== 'audio') {
+      console.error('❌ Media is not audio type:', media.media_type);
+      toast.error('Metadata extraction is only available for audio files');
+      return;
+    }
+
+    setIsExtractingMetadata(true);
+    try {
+      console.log('🚀 Calling extract metadata API...');
+      const response = await fetch('/api/media/audio-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'extract',
+          mediaId: media.id
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📥 Extract metadata result:', result);
+      
+      if (result.success && result.metadata) {
+        // Update audio form with extracted metadata
+        audioForm.setValue('audio_title', result.metadata.title || '');
+        audioForm.setValue('audio_artist', result.metadata.artist || '');
+        audioForm.setValue('audio_album', result.metadata.album || '');
+        audioForm.setValue('audio_genre', result.metadata.genre || '');
+        audioForm.setValue('audio_year', result.metadata.year || '');
+        audioForm.setValue('audio_track_number', result.metadata.trackNumber || '');
+        audioForm.setValue('audio_album_artist', result.metadata.albumArtist || '');
+        audioForm.setValue('audio_composer', result.metadata.composer || '');
+        audioForm.setValue('audio_comment', result.metadata.comment || '');
+        
+        toast.success('Metadata extracted successfully from audio file');
+      } else {
+        toast.error(result.error || 'Failed to extract metadata from audio file');
+      }
+    } catch (error) {
+      toast.error('Failed to extract metadata from audio file');
+    } finally {
+      setIsExtractingMetadata(false);
+    }
+  };
+
+  const handleAudioMetadataSubmit = async (data: AudioMetadataFormData) => {
+    console.log('🎵 Audio metadata form submitted:', data);
+    console.log('📊 Form data processed:', {
+      mediaId: media.id,
+      updateFile: data.update_file,
+      metadata: {
+        title: data.audio_title || undefined,
+        artist: data.audio_artist || undefined,
+        album: data.audio_album || undefined,
+        genre: data.audio_genre || undefined,
+        year: data.audio_year || undefined,
+        trackNumber: data.audio_track_number || undefined,
+        albumArtist: data.audio_album_artist || undefined,
+        composer: data.audio_composer || undefined,
+        comment: data.audio_comment || undefined,
+      }
+    });
+    
+    setIsUpdatingAudioMetadata(true);
+    try {
+      console.log('🚀 Calling update metadata API...');
+      const response = await fetch('/api/media/audio-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          mediaId: media.id,
+          metadata: {
+            title: data.audio_title || undefined,
+            artist: data.audio_artist || undefined,
+            album: data.audio_album || undefined,
+            genre: data.audio_genre || undefined,
+            year: data.audio_year || undefined,
+            trackNumber: data.audio_track_number || undefined,
+            albumArtist: data.audio_album_artist || undefined,
+            composer: data.audio_composer || undefined,
+            comment: data.audio_comment || undefined,
+          },
+          updateFile: data.update_file,
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📥 Update metadata result:', result);
+
+      if (result.success) {
+        console.log('✅ Audio metadata update successful!');
+        toast.success(`Audio metadata updated successfully${data.update_file ? ' and written to file' : ' in database'}`);
+        onUpdate?.();
+      } else {
+        console.error('❌ Audio metadata update failed:', result.error);
+        toast.error(result.error || 'Failed to update audio metadata');
+      }
+    } catch (error) {
+      console.error('❌ Audio metadata update error:', error);
+      toast.error(`Failed to update audio metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdatingAudioMetadata(false);
+    }
   };
 
   const renderMediaPreview = () => {
@@ -323,6 +478,77 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                 </div>
               )}
             </div>
+            
+            {/* Audio Metadata Display */}
+            {media.media_type === 'audio' && (
+              <>
+                <Separator className="my-4" />
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <Music className="h-4 w-4" />
+                    Audio Metadata
+                  </h4>
+                  <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2">
+                    {media.audio_title && (
+                      <div>
+                        <p className="text-sm font-medium">Title</p>
+                        <p className="text-sm text-muted-foreground">{media.audio_title}</p>
+                      </div>
+                    )}
+                    {media.audio_artist && (
+                      <div>
+                        <p className="text-sm font-medium">Artist</p>
+                        <p className="text-sm text-muted-foreground">{media.audio_artist}</p>
+                      </div>
+                    )}
+                    {media.audio_album && (
+                      <div className="flex items-center gap-2">
+                        <Disc className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Album</p>
+                          <p className="text-sm text-muted-foreground">{media.audio_album}</p>
+                        </div>
+                      </div>
+                    )}
+                    {media.audio_genre && (
+                      <div>
+                        <p className="text-sm font-medium">Genre</p>
+                        <p className="text-sm text-muted-foreground">{media.audio_genre}</p>
+                      </div>
+                    )}
+                    {media.audio_year && (
+                      <div>
+                        <p className="text-sm font-medium">Year</p>
+                        <p className="text-sm text-muted-foreground">{media.audio_year}</p>
+                      </div>
+                    )}
+                    {media.audio_track_number && (
+                      <div>
+                        <p className="text-sm font-medium">Track #</p>
+                        <p className="text-sm text-muted-foreground">{media.audio_track_number}</p>
+                      </div>
+                    )}
+                    {media.audio_duration && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Duration</p>
+                          <p className="text-sm text-muted-foreground">
+                            {Math.floor(media.audio_duration / 60)}:{(media.audio_duration % 60).toString().padStart(2, '0')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {media.has_cover_art && (
+                      <div>
+                        <p className="text-sm font-medium">Cover Art</p>
+                        <p className="text-sm text-muted-foreground">Available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -385,6 +611,187 @@ export const MediaForm: React.FC<MediaFormProps> = ({
           </form>
         </CardContent>
       </Card>
+
+      {/* Audio Metadata Card */}
+      {media.media_type === 'audio' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Music className="h-5 w-5" />
+              Audio Metadata
+            </CardTitle>
+            <CardDescription>
+              Edit ID3 tags and metadata for this audio file. Changes can be saved to database only or written to the actual file.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={audioForm.handleSubmit(handleAudioMetadataSubmit)} className="space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExtractMetadata}
+                  disabled={isExtractingMetadata}
+                  className="gap-2"
+                >
+                  {isExtractingMetadata ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Extracting metadata...
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4" />
+                      Extract from File
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {isExtractingMetadata && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span className="text-sm text-muted-foreground">
+                    Reading ID3 tags from audio file...
+                  </span>
+                </div>
+              )}
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="audio_title">Title</Label>
+                  <Input
+                    id="audio_title"
+                    {...audioForm.register('audio_title')}
+                    placeholder="Song title"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_artist">Artist</Label>
+                  <Input
+                    id="audio_artist"
+                    {...audioForm.register('audio_artist')}
+                    placeholder="Artist name"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_album">Album</Label>
+                  <Input
+                    id="audio_album"
+                    {...audioForm.register('audio_album')}
+                    placeholder="Album title"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_genre">Genre</Label>
+                  <Input
+                    id="audio_genre"
+                    {...audioForm.register('audio_genre')}
+                    placeholder="Music genre"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_year">Year</Label>
+                  <Input
+                    id="audio_year"
+                    {...audioForm.register('audio_year')}
+                    placeholder="2024"
+                    maxLength={4}
+                  />
+                  {audioForm.formState.errors.audio_year && (
+                    <p className="text-xs text-destructive">
+                      {audioForm.formState.errors.audio_year.message}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_track_number">Track Number</Label>
+                  <Input
+                    id="audio_track_number"
+                    {...audioForm.register('audio_track_number')}
+                    placeholder="1"
+                  />
+                  {audioForm.formState.errors.audio_track_number && (
+                    <p className="text-xs text-destructive">
+                      {audioForm.formState.errors.audio_track_number.message}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_album_artist">Album Artist</Label>
+                  <Input
+                    id="audio_album_artist"
+                    {...audioForm.register('audio_album_artist')}
+                    placeholder="Album artist (if different)"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="audio_composer">Composer</Label>
+                  <Input
+                    id="audio_composer"
+                    {...audioForm.register('audio_composer')}
+                    placeholder="Composer name"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="audio_comment">Comment</Label>
+                <Textarea
+                  id="audio_comment"
+                  {...audioForm.register('audio_comment')}
+                  placeholder="Additional comments or notes"
+                  rows={2}
+                />
+              </div>
+
+              <Separator />
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="update_file"
+                    checked={audioForm.watch('update_file')}
+                    onCheckedChange={(checked) => audioForm.setValue('update_file', !!checked)}
+                  />
+                  <Label htmlFor="update_file" className="text-sm">
+                    Update file metadata (writes ID3 tags to actual audio file)
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  If unchecked, metadata will only be saved to the database for faster updates. 
+                  If checked, ID3 tags will be written to the audio file itself (slower but persistent).
+                </p>
+              </div>
+
+              <Button 
+                type="submit" 
+                disabled={isUpdatingAudioMetadata}
+                className="w-full gap-2"
+              >
+                {isUpdatingAudioMetadata ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    {audioForm.watch('update_file') ? 'Writing to file...' : 'Updating database...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Update Audio Metadata
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Upload Dialog */}
       <MediaUploadDialog
