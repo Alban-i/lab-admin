@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
+import { generateSlug } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
@@ -78,6 +79,7 @@ const TagForm: React.FC<TagFormProps> = ({ tag }) => {
           .from('tags')
           .insert({
             name: values.name,
+            slug: generateSlug(values.name),
           })
           .select()
           .single();

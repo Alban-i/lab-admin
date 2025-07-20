@@ -670,7 +670,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="cover_image">Cover Image</Label>
               <ImageUpload
-                value={form.watch('cover_image_url') ? [form.watch('cover_image_url')] : []}
+                value={form.watch('cover_image_url') ? [form.watch('cover_image_url')!] : []}
                 disabled={updateMutation.isPending}
                 onChange={(url) => form.setValue('cover_image_url', url)}
                 onRemove={() => form.setValue('cover_image_url', '')}

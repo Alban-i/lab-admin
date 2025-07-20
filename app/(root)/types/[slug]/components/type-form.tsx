@@ -31,6 +31,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import type { Classification } from '@/types/types';
+import { generateSlug } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -107,6 +108,7 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
             name: values.name,
             description: values.description,
             classification: values.classification,
+            slug: generateSlug(values.name),
           })
           .select()
           .single();

@@ -6,6 +6,7 @@ import { DataTableColumnHeader } from './data-table-column-header';
 export type IndividualsInDataTable = {
   id: number;
   name: string;
+  slug: string;
   type_id: number | null;
   type_name?: string | null;
   created_at: string | null;

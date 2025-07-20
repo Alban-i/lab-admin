@@ -25,6 +25,7 @@ import { useState } from 'react';
 interface Type {
   id: string;
   name: string;
+  slug: string;
   description: string;
   created_at: string;
   classification: string;

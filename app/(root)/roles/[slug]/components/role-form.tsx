@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
+import { generateSlug } from '@/lib/utils';
 
 const formSchema = z.object({
   label: z.string().min(1),
@@ -86,6 +87,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ role }) => {
             label: values.label,
             value: values.value,
             order: values.order,
+            slug: generateSlug(values.label),
           })
           .select()
           .single();

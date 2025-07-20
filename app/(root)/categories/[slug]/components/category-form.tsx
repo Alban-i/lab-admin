@@ -18,6 +18,7 @@ import DeleteButton from '@/components/delete-btn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import { generateSlug } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -88,6 +89,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category }) => {
           .insert({
             name: values.name,
             description: values.description,
+            slug: generateSlug(values.name),
           })
           .select()
           .single();

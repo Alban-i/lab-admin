@@ -136,7 +136,7 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
         const { data, error } = await supabase
           .from('posts')
           .insert(postData)
-          .select('id')
+          .select('id, slug')
           .single();
 
         if (error) {

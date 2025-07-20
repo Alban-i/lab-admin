@@ -32,6 +32,7 @@ import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { RevalidateButton } from '@/components/revalidate-button';
 import { TabToggle } from '@/components/ui/tab-toggle';
+import { IndividualWithType } from '@/actions/get-individual';
 
 interface Individual {
   id: number;
@@ -42,8 +43,8 @@ interface Individual {
   created_at: string | null;
   updated_at: string | null;
   original_name?: string | null;
-  status: 'draft' | 'published' | 'archived'; // <-- Added
-  ranking?: 'recommended' | 'not recommended' | null; // <-- Added
+  status: 'draft' | 'published' | 'archived';
+  ranking?: 'recommended' | 'not recommended' | null;
 }
 
 interface Type {
@@ -62,12 +63,12 @@ const formSchema = z.object({
     ),
   type_id: z.string().optional(),
   original_name: z.string().optional(),
-  status: z.enum(['draft', 'published', 'archived']), // <-- Added
-  ranking: z.enum(['recommended', 'not recommended']), // <-- Added
+  status: z.enum(['draft', 'published', 'archived']),
+  ranking: z.enum(['recommended', 'not recommended']),
 });
 
 interface IndividualFormProps {
-  individual: Individual | null;
+  individual: IndividualWithType | null;
   types: Type[];
 }
 
@@ -94,8 +95,8 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       slug: individual?.slug ?? '',
       type_id: individual?.type_id?.toString() ?? 'none',
       original_name: individual?.original_name ?? '',
-      status: individual?.status ?? 'draft', // <-- Added
-      ranking: individual?.ranking ?? 'not recommended', // <-- Added
+      status: (individual?.status as 'draft' | 'published' | 'archived') ?? 'draft',
+      ranking: (individual?.ranking as 'recommended' | 'not recommended') ?? 'not recommended',
     },
   });
 
