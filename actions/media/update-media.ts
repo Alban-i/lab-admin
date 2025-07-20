@@ -15,6 +15,7 @@ export type MediaUpdateData = {
   description?: string;
   transcription?: string;
   slug: string; // Now required since slug is mandatory
+  cover_image_url?: string;
 };
 
 export const updateMedia = async (updateData: MediaUpdateData): Promise<MediaUpdateResult> => {
@@ -68,6 +69,7 @@ export const updateMedia = async (updateData: MediaUpdateData): Promise<MediaUpd
       description: updateData.description,
       transcription: updateData.transcription,
       slug: updateData.slug,
+      cover_image_url: updateData.cover_image_url,
       updated_at: new Date().toISOString(),
     };
 

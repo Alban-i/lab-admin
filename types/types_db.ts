@@ -290,6 +290,7 @@ export type Database = {
           audio_title: string | null
           audio_track_number: string | null
           audio_year: string | null
+          cover_image_url: string | null
           created_at: string | null
           description: string | null
           file_name: string
@@ -318,6 +319,7 @@ export type Database = {
           audio_title?: string | null
           audio_track_number?: string | null
           audio_year?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
           file_name: string
@@ -346,6 +348,7 @@ export type Database = {
           audio_title?: string | null
           audio_track_number?: string | null
           audio_year?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
           file_name?: string

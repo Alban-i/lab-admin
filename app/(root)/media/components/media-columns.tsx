@@ -67,6 +67,17 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// Helper function to map database media_type to route paths
+const getMediaRoutePath = (mediaType: string): string => {
+  const mediaTypeMap: Record<string, string> = {
+    audio: 'audio',
+    image: 'images', 
+    video: 'videos',
+    document: 'documents'
+  };
+  return mediaTypeMap[mediaType] || mediaType;
+};
+
 const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh: () => void }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const deleteMutation = useDeleteMediaMutation();
@@ -100,7 +111,7 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/media/${media.media_type}/${media.slug}`}>
+            <Link href={`/media/${getMediaRoutePath(media.media_type)}/${media.slug}`}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Link>

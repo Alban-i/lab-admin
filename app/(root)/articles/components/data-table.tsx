@@ -28,12 +28,12 @@ import Link from 'next/link';
 import { DataTableToolbar } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
 
-interface DataTableProps<TData extends { id: string }, TValue> {
+interface DataTableProps<TData extends { id: string; slug: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function DataTable<TData extends { id: string }, TValue>({
+export function DataTable<TData extends { id: string; slug: string }, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {

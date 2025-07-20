@@ -48,6 +48,7 @@ import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { toast } from 'sonner';
 import NextImage from 'next/image';
 import { generateSlug } from '@/lib/utils';
+import ImageUpload from '@/components/image-upload';
 
 const mediaFormSchema = z.object({
   alt_text: z.string().optional(),
@@ -56,6 +57,7 @@ const mediaFormSchema = z.object({
   slug: z.string()
     .min(3, 'Slug must be at least 3 characters long')
     .regex(/^[a-z0-9_-]+$/, 'Slug must contain only lowercase letters, numbers, hyphens, and underscores'),
+  cover_image_url: z.string().optional(),
 });
 
 const audioMetadataSchema = z.object({
@@ -133,6 +135,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       description: media.description || '',
       transcription: media.transcription || '',
       slug: media.slug || generateSlug(media.original_name),
+      cover_image_url: media.cover_image_url || '',
     },
   });
 
@@ -159,6 +162,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       description: data.description,
       transcription: data.transcription,
       slug: data.slug,
+      cover_image_url: data.cover_image_url,
     }, {
       onSuccess: () => {
         toast.success('Media updated successfully');
@@ -335,7 +339,22 @@ export const MediaForm: React.FC<MediaFormProps> = ({
         return (
           <div className="w-full bg-muted rounded-lg p-6">
             <div className="flex items-center justify-center mb-4">
-              <Music className="h-12 w-12 text-muted-foreground" />
+              {media.cover_image_url ? (
+                <div className="relative w-32 h-32 rounded-lg overflow-hidden">
+                  <NextImage
+                    src={media.cover_image_url}
+                    alt={media.alt_text || 'Cover image'}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.style.display = 'none';
+                    }}
+                  />
+                </div>
+              ) : (
+                <Music className="h-12 w-12 text-muted-foreground" />
+              )}
             </div>
             <audio controls className="w-full">
               <source src={media.url} type={media.mime_type} />
@@ -554,8 +573,14 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                     )}
                     {media.has_cover_art && (
                       <div>
-                        <p className="text-sm font-medium">Cover Art</p>
-                        <p className="text-sm text-muted-foreground">Available</p>
+                        <p className="text-sm font-medium">Embedded Cover Art</p>
+                        <p className="text-sm text-muted-foreground">Available in file</p>
+                      </div>
+                    )}
+                    {media.cover_image_url && (
+                      <div>
+                        <p className="text-sm font-medium">Cover Image</p>
+                        <p className="text-sm text-muted-foreground">Custom uploaded</p>
                       </div>
                     )}
                   </div>
@@ -641,6 +666,19 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                 </p>
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="cover_image">Cover Image</Label>
+              <ImageUpload
+                value={form.watch('cover_image_url') ? [form.watch('cover_image_url')] : []}
+                disabled={updateMutation.isPending}
+                onChange={(url) => form.setValue('cover_image_url', url)}
+                onRemove={() => form.setValue('cover_image_url', '')}
+              />
+              <p className="text-xs text-muted-foreground">
+                Upload a cover image for this media file. This is especially useful for audio files.
+              </p>
+            </div>
 
             <Button 
               type="submit" 

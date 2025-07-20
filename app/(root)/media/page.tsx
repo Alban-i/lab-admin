@@ -14,6 +14,17 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+// Helper function to map database media_type to route paths
+const getMediaRoutePath = (mediaType: string): string => {
+  const mediaTypeMap: Record<string, string> = {
+    audio: 'audio',
+    image: 'images', 
+    video: 'videos',
+    document: 'documents'
+  };
+  return mediaTypeMap[mediaType] || mediaType;
+};
+
 export default async function MediaDashboard() {
   const allMedia = await getMedia();
 
@@ -227,7 +238,7 @@ export default async function MediaDashboard() {
                       {media.media_type}
                     </Badge>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/media/${media.media_type}/${media.slug}`}>
+                      <Link href={`/media/${getMediaRoutePath(media.media_type)}/${media.slug}`}>
                         View
                       </Link>
                     </Button>
