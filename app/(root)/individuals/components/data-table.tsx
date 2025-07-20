@@ -107,7 +107,7 @@ export function DataTable<TData extends { id: number }, TValue>({
                       className="bg-background p-0 group-hover:bg-muted/50"
                     >
                       <Link
-                        href={`/individuals/${row.original.id}`}
+                        href={`/individuals/${row.original.slug}`}
                         className="block p-2"
                       >
                         {flexRender(

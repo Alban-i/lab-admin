@@ -81,7 +81,7 @@ const RolesClient: React.FC<RolesClientProps> = ({ roles }) => {
                 <TableRow
                   key={role.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/roles/${role.id}`)}
+                  onClick={() => router.push(`/roles/${role.slug}`)}
                 >
                   <TableCell>{role.label}</TableCell>
                   <TableCell>{role.value}</TableCell>

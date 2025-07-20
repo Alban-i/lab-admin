@@ -79,7 +79,7 @@ const TagsClient: React.FC<TagsClientProps> = ({ tags }) => {
                 <TableRow
                   key={tag.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/tags/${tag.id}`)}
+                  onClick={() => router.push(`/tags/${tag.slug}`)}
                 >
                   <TableCell>{tag.name}</TableCell>
                   <TableCell>

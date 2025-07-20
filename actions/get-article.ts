@@ -2,19 +2,27 @@ import { createClient } from '@/providers/supabase/server';
 import { Articles } from '@/types/types';
 
 const getArticle = async (
-  articleId: string
+  identifier: string
 ): Promise<Articles | null | 'error'> => {
-  if (articleId === 'new') {
+  if (identifier === 'new') {
     return null;
   }
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('articles')
-    .select(`*`)
-    .eq('id', articleId)
-    .single();
+  // Try to fetch by slug first, fallback to ID for backward compatibility
+  let query = supabase.from('articles').select(`*`);
+  
+  // Check if identifier looks like a UUID (backward compatibility)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+  
+  if (isUuid) {
+    query = query.eq('id', identifier);
+  } else {
+    query = query.eq('slug', identifier);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     console.log(error);

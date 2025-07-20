@@ -227,7 +227,7 @@ export default async function MediaDashboard() {
                       {media.media_type}
                     </Badge>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/media/${media.media_type}/${media.id}`}>
+                      <Link href={`/media/${media.media_type}/${media.slug}`}>
                         View
                       </Link>
                     </Button>

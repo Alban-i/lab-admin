@@ -13,11 +13,12 @@ interface PostsClientProps {
 }
 
 const PostsClient: React.FC<PostsClientProps> = ({ posts }) => {
-  const refinedPosts = posts.map(({ id, title, status }) => ({
+  const refinedPosts = posts.map(({ id, title, status, slug }) => ({
     id: id.toString(),
     title: title ?? '',
     status: (status.charAt(0).toUpperCase() +
       status.slice(1).toLowerCase()) as ArticleStatus,
+    slug,
   }));
 
   return (

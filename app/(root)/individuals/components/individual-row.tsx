@@ -23,7 +23,7 @@ const IndividualRow: React.FC<IndividualRowProps> = ({ individual }) => {
       key={individual.id}
       className="cursor-pointer hover:bg-secondary/50"
       onClick={() => {
-        router.push(`/individuals/${individual.id}`);
+        router.push(`/individuals/${individual.slug}`);
       }}
     >
       <TableCell className="pl-4">{individual.name}</TableCell>

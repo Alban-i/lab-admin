@@ -10,6 +10,7 @@ export type PostsInDataTable = {
   id: string;
   title: string;
   status: ArticleStatus;
+  slug: string;
 };
 
 // Extend the ColumnDef type to include the label property

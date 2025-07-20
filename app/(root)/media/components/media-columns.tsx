@@ -100,7 +100,7 @@ const MediaActions = ({ media, onRefresh }: { media: MediaWithProfile; onRefresh
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/media/${media.media_type}/${media.id}`}>
+            <Link href={`/media/${media.media_type}/${media.slug}`}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Link>

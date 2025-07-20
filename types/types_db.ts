@@ -188,6 +188,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          slug: string
           updated_at: string
         }
         Insert: {
@@ -195,6 +196,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          slug: string
           updated_at?: string
         }
         Update: {
@@ -202,6 +204,7 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -482,6 +485,7 @@ export type Database = {
           id: number
           label: string | null
           order: number | null
+          slug: string
           value: string | null
         }
         Insert: {
@@ -489,6 +493,7 @@ export type Database = {
           id?: never
           label?: string | null
           order?: number | null
+          slug: string
           value?: string | null
         }
         Update: {
@@ -496,6 +501,7 @@ export type Database = {
           id?: never
           label?: string | null
           order?: number | null
+          slug?: string
           value?: string | null
         }
         Relationships: []
@@ -505,18 +511,21 @@ export type Database = {
           created_at: string
           id: number
           name: string
+          slug: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: never
           name: string
+          slug: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: never
           name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -566,6 +575,7 @@ export type Database = {
           description: string | null
           id: number
           name: string
+          slug: string
           updated_at: string | null
         }
         Insert: {
@@ -574,6 +584,7 @@ export type Database = {
           description?: string | null
           id?: number
           name: string
+          slug: string
           updated_at?: string | null
         }
         Update: {
@@ -582,6 +593,7 @@ export type Database = {
           description?: string | null
           id?: number
           name?: string
+          slug?: string
           updated_at?: string | null
         }
         Relationships: []

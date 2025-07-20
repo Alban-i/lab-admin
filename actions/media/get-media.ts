@@ -76,11 +76,12 @@ export const getMedia = async (filters: MediaFilters = {}): Promise<MediaResult>
   }
 };
 
-export const getMediaById = async (id: string): Promise<MediaWithProfile | null> => {
+export const getMediaById = async (identifier: string): Promise<MediaWithProfile | null> => {
   try {
     const supabase = await createClient();
     
-    const { data, error } = await supabase
+    // Try to fetch by slug first, fallback to ID for backward compatibility
+    let query = supabase
       .from('media')
       .select(`
         *,
@@ -88,9 +89,18 @@ export const getMediaById = async (id: string): Promise<MediaWithProfile | null>
           full_name,
           username
         )
-      `)
-      .eq('id', id)
-      .single();
+      `);
+    
+    // Check if identifier looks like a UUID (backward compatibility)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    
+    if (isUuid) {
+      query = query.eq('id', identifier);
+    } else {
+      query = query.eq('slug', identifier);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       console.error('Error fetching media by ID:', error);

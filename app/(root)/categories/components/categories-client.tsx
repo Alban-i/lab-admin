@@ -89,7 +89,7 @@ const CategoriesClient: React.FC<CategoriesClientProps> = ({ categories }) => {
                 <TableRow
                   key={category.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/categories/${category.id}`)}
+                  onClick={() => router.push(`/categories/${category.slug}`)}
                 >
                   <TableCell>{category.name}</TableCell>
                   <TableCell className="max-w-md break-words whitespace-normal">

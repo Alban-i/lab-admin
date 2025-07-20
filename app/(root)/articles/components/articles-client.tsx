@@ -12,10 +12,11 @@ interface ArticlesClientProps {
 }
 
 const ArticlesClient: React.FC<ArticlesClientProps> = ({ articles }) => {
-  const refinedArticles = articles.map(({ id, title, status }) => ({
+  const refinedArticles = articles.map(({ id, title, status, slug }) => ({
     id,
     title: title ?? '',
     status,
+    slug,
   }));
 
   return (

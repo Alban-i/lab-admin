@@ -27,14 +27,29 @@ const BreadcrumbClient = () => {
     }
   );
 
-  // Capitalize function, keeping IDs unchanged
-  const capitalize = (s: string) =>
-    /^[a-zA-Z]+$/.test(s) ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  // Capitalize function and format slugs
+  const formatSegment = (segment: string, index: number) => {
+    // If it's a simple word (like 'articles', 'posts'), capitalize it
+    if (/^[a-zA-Z]+$/.test(segment)) {
+      return segment.charAt(0).toUpperCase() + segment.slice(1);
+    }
+    
+    // If it's a slug (contains hyphens or is complex), make it readable
+    if (segment.includes('-')) {
+      return segment
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    
+    // For UUIDs or other complex identifiers, show as-is
+    return segment;
+  };
 
   // Build breadcrumb items
   const breadcrumbs = filteredSegments.map((segment, index) => {
     const href = '/' + filteredSegments.slice(0, index + 1).join('/');
-    return { label: capitalize(segment), href };
+    return { label: formatSegment(segment, index), href };
   });
 
   return (

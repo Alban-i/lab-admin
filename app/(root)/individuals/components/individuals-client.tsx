@@ -15,6 +15,7 @@ interface Individual {
   updated_at: string | null;
   original_name?: string | null; // <-- Added
   status: 'draft' | 'published' | 'archived'; // <-- Added
+  slug: string; // <-- Added for slug-based routing
   types?: {
     name: string;
   } | null;
@@ -35,6 +36,7 @@ const IndividualsClient: React.FC<IndividualsClientProps> = ({
     type_name: individual.types?.name || null,
     original_name: individual.original_name || '', // <-- Ensure this is passed
     status: individual.status, // <-- Ensure this is passed
+    slug: individual.slug, // <-- Ensure slug is passed for navigation
   }));
 
   return (

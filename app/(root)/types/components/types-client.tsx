@@ -88,7 +88,7 @@ const TypesClient: React.FC<TypesClientProps> = ({ types }) => {
                 <TableRow
                   key={type.id}
                   className={cn('cursor-pointer hover:bg-secondary/50')}
-                  onClick={() => router.push(`/types/${type.id}`)}
+                  onClick={() => router.push(`/types/${type.slug}`)}
                 >
                   <TableCell className="font-bold">{type.name}</TableCell>
                   <TableCell>
