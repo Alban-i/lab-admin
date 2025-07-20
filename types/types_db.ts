@@ -297,6 +297,7 @@ export type Database = {
           media_type: string
           mime_type: string
           original_name: string
+          slug: string
           transcription: string | null
           updated_at: string | null
           uploaded_by: string | null
@@ -324,6 +325,7 @@ export type Database = {
           media_type: string
           mime_type: string
           original_name: string
+          slug: string
           transcription?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
@@ -351,6 +353,7 @@ export type Database = {
           media_type?: string
           mime_type?: string
           original_name?: string
+          slug?: string
           transcription?: string | null
           updated_at?: string | null
           uploaded_by?: string | null

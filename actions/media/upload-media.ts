@@ -3,6 +3,7 @@
 import { createClient } from '@/providers/supabase/server';
 import { createClient as createServiceClient } from '@/providers/supabase/server-role';
 import { TablesInsert } from '@/types/types_db';
+import { generateSlug, generateUniqueSlug } from '@/lib/utils';
 
 export type MediaUploadResult = {
   success: boolean;
@@ -16,6 +17,7 @@ export type MediaUploadData = {
   mediaType: 'audio' | 'image' | 'video' | 'document';
   altText?: string;
   description?: string;
+  slug?: string; // Optional override for auto-generated slug
 };
 
 const sanitizeFilename = (filename: string): string => {
@@ -187,6 +189,32 @@ export const uploadMedia = async (uploadData: MediaUploadData): Promise<MediaUpl
 
     console.log('Generated public URL:', publicUrl);
 
+    // Generate unique slug
+    const { slug: providedSlug } = uploadData;
+    let finalSlug: string;
+    
+    if (providedSlug) {
+      // Use provided slug, but still check for uniqueness
+      const baseSlug = generateSlug(providedSlug);
+      const { data: existingSlugs } = await serviceSupabase
+        .from('media')
+        .select('slug');
+      
+      const slugArray = existingSlugs?.map(item => item.slug) || [];
+      finalSlug = generateUniqueSlug(baseSlug, slugArray);
+    } else {
+      // Auto-generate slug from originalName
+      const baseSlug = generateSlug(originalName);
+      const { data: existingSlugs } = await serviceSupabase
+        .from('media')
+        .select('slug');
+      
+      const slugArray = existingSlugs?.map(item => item.slug) || [];
+      finalSlug = generateUniqueSlug(baseSlug, slugArray);
+    }
+    
+    console.log('Generated unique slug:', finalSlug);
+
     // Save media metadata to database
     const mediaData: TablesInsert<'media'> = {
       original_name: originalName,
@@ -199,6 +227,7 @@ export const uploadMedia = async (uploadData: MediaUploadData): Promise<MediaUpl
       alt_text: altText || null,
       description: description || null,
       uploaded_by: user.id,
+      slug: finalSlug,
     };
 
     console.log('Inserting media data to database:', mediaData);

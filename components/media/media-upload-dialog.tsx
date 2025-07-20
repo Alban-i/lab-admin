@@ -1,41 +1,57 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Upload, 
-  X, 
-  Image, 
-  Music, 
-  Video, 
-  FileText, 
+import {
+  Upload,
+  X,
+  Image,
+  Music,
+  Video,
+  FileText,
   AlertCircle,
   Check,
-  Loader2
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { MediaUploadData } from '@/actions/media/upload-media';
 import { useUploadMediaMutation } from '@/actions/media/media-queries';
 import { TablesInsert } from '@/types/types_db';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, generateSlug } from '@/lib/utils';
 
 interface MediaUploadDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (uploadedMedia: (TablesInsert<'media'> & { id: string })[]) => void;
+  onSuccess?: (
+    uploadedMedia: (TablesInsert<'media'> & { id: string })[]
+  ) => void;
   mediaType?: 'audio' | 'image' | 'video' | 'document';
 }
 
 interface FileUploadItem {
   file: File;
   mediaType: 'audio' | 'image' | 'video' | 'document';
+  slug: string;
   altText: string;
   description: string;
   status: 'pending' | 'uploading' | 'success' | 'error';
@@ -53,24 +69,27 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const uploadMutation = useUploadMediaMutation({ showToast: false });
 
-  const getMediaTypeFromFile = useCallback((file: File): 'audio' | 'image' | 'video' | 'document' => {
-    if (mediaType) return mediaType;
-    
-    const type = file.type.split('/')[0];
-    switch (type) {
-      case 'image':
-        return 'image';
-      case 'audio':
-        return 'audio';
-      case 'video':
-        return 'video';
-      default:
-        return 'document';
-    }
-  }, [mediaType]);
+  const getMediaTypeFromFile = useCallback(
+    (file: File): 'audio' | 'image' | 'video' | 'document' => {
+      if (mediaType) return mediaType;
+
+      const type = file.type.split('/')[0];
+      switch (type) {
+        case 'image':
+          return 'image';
+        case 'audio':
+          return 'audio';
+        case 'video':
+          return 'video';
+        default:
+          return 'document';
+      }
+    },
+    [mediaType]
+  );
 
   const getFileTypeIcon = (type: string) => {
     switch (type) {
@@ -93,18 +112,22 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleFiles = useCallback((fileList: FileList) => {
-    const newFiles: FileUploadItem[] = Array.from(fileList).map(file => ({
-      file,
-      mediaType: getMediaTypeFromFile(file),
-      altText: '',
-      description: '',
-      status: 'pending',
-      progress: 0,
-    }));
+  const handleFiles = useCallback(
+    (fileList: FileList) => {
+      const newFiles: FileUploadItem[] = Array.from(fileList).map((file) => ({
+        file,
+        mediaType: getMediaTypeFromFile(file),
+        slug: generateSlug(file.name),
+        altText: '',
+        description: '',
+        status: 'pending',
+        progress: 0,
+      }));
 
-    setFiles(prev => [...prev, ...newFiles]);
-  }, [getMediaTypeFromFile]);
+      setFiles((prev) => [...prev, ...newFiles]);
+    },
+    [getMediaTypeFromFile]
+  );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -116,36 +139,53 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
-    }
-  }, [handleFiles]);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [handleFiles]
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFiles(e.target.files);
+      }
+    },
+    [handleFiles]
+  );
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateFileData = (index: number, field: keyof FileUploadItem, value: string | number | FileUploadItem['status'] | FileUploadItem['uploadedMediaData'] | ((prev: number) => number)) => {
-    setFiles(prev => prev.map((file, i) => {
-      if (i === index) {
-        if (typeof value === 'function' && field === 'progress') {
-          return { ...file, [field]: value(file.progress) };
+  const updateFileData = (
+    index: number,
+    field: keyof FileUploadItem,
+    value:
+      | string
+      | number
+      | FileUploadItem['status']
+      | FileUploadItem['uploadedMediaData']
+      | ((prev: number) => number)
+  ) => {
+    setFiles((prev) =>
+      prev.map((file, i) => {
+        if (i === index) {
+          if (typeof value === 'function' && field === 'progress') {
+            return { ...file, [field]: value(file.progress) };
+          }
+          return { ...file, [field]: value };
         }
-        return { ...file, [field]: value };
-      }
-      return file;
-    }));
+        return file;
+      })
+    );
   };
 
   const uploadFile = async (fileItem: FileUploadItem, index: number) => {
@@ -156,12 +196,18 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
     const maxSizeForServerAction = 30 * 1024 * 1024; // 30MB in bytes
     if (fileItem.file.size > maxSizeForServerAction) {
       updateFileData(index, 'status', 'error');
-      updateFileData(index, 'error', `File size (${formatFileSize(fileItem.file.size)}) exceeds the 30MB limit for uploads. Please use a smaller file.`);
+      updateFileData(
+        index,
+        'error',
+        `File size (${formatFileSize(
+          fileItem.file.size
+        )}) exceeds the 30MB limit for uploads. Please use a smaller file.`
+      );
       return;
     }
 
     let progressInterval: NodeJS.Timeout | null = null;
-    
+
     try {
       const uploadData: MediaUploadData = {
         originalName: fileItem.file.name,
@@ -169,11 +215,14 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
         mediaType: fileItem.mediaType,
         altText: fileItem.altText,
         description: fileItem.description,
+        slug: fileItem.slug,
       };
 
       // Simulate progress for better UX
       progressInterval = setInterval(() => {
-        updateFileData(index, 'progress', (prev: number) => Math.min(prev + 10, 90));
+        updateFileData(index, 'progress', (prev: number) =>
+          Math.min(prev + 10, 90)
+        );
       }, 200);
 
       // Use mutateAsync with { throwOnError: false } to prevent individual error toasts
@@ -188,40 +237,59 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
       if (progressInterval) {
         clearInterval(progressInterval);
       }
-      
+
       updateFileData(index, 'status', 'error');
-      
+
       // Handle different types of errors
       if (error instanceof Error) {
         // Check for specific error patterns
-        if (error.message.includes('Body exceeded') || error.message.includes('413')) {
-          updateFileData(index, 'error', `File size (${formatFileSize(fileItem.file.size)}) exceeds the upload limit. Please use a smaller file.`);
+        if (
+          error.message.includes('Body exceeded') ||
+          error.message.includes('413')
+        ) {
+          updateFileData(
+            index,
+            'error',
+            `File size (${formatFileSize(
+              fileItem.file.size
+            )}) exceeds the upload limit. Please use a smaller file.`
+          );
         } else if (error.message.includes('Network')) {
-          updateFileData(index, 'error', 'Network error. Please check your connection and try again.');
+          updateFileData(
+            index,
+            'error',
+            'Network error. Please check your connection and try again.'
+          );
         } else {
           updateFileData(index, 'error', `Upload failed: ${error.message}`);
         }
       } else {
-        updateFileData(index, 'error', 'An unexpected error occurred. Please try again.');
+        updateFileData(
+          index,
+          'error',
+          'An unexpected error occurred. Please try again.'
+        );
       }
     }
   };
 
   const handleUploadAll = async () => {
     setIsUploading(true);
-    
-    const pendingFiles = files.filter(file => file.status === 'pending');
-    
+
+    const pendingFiles = files.filter((file) => file.status === 'pending');
+
     try {
       await Promise.all(
         pendingFiles.map((file) => {
-          const actualIndex = files.findIndex(f => f === file);
+          const actualIndex = files.findIndex((f) => f === file);
           return uploadFile(file, actualIndex);
         })
       );
 
-      const successCount = files.filter(file => file.status === 'success').length;
-      const errorCount = files.filter(file => file.status === 'error').length;
+      const successCount = files.filter(
+        (file) => file.status === 'success'
+      ).length;
+      const errorCount = files.filter((file) => file.status === 'error').length;
 
       // Handle success cases
       if (successCount > 0) {
@@ -231,18 +299,20 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
         } else if (errorCount === 0) {
           toast.success(`${successCount} file(s) uploaded successfully`);
         } else {
-          toast.success(`${successCount} of ${pendingFiles.length} file(s) uploaded successfully`);
+          toast.success(
+            `${successCount} of ${pendingFiles.length} file(s) uploaded successfully`
+          );
         }
-        
+
         // Call onSuccess callback with uploaded media data
         const uploadedMedia = files
-          .filter(file => file.status === 'success' && file.uploadedMediaData)
-          .map(file => file.uploadedMediaData!);
-        
+          .filter((file) => file.status === 'success' && file.uploadedMediaData)
+          .map((file) => file.uploadedMediaData!);
+
         if (onSuccess && uploadedMedia.length > 0) {
           onSuccess(uploadedMedia);
         }
-        
+
         // Call onSuccess callback if uploads succeeded
         if (errorCount === 0) {
           // Reset files after successful upload
@@ -251,11 +321,11 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
           }, 1000);
         }
       }
-      
+
       // Handle error cases
       if (errorCount > 0) {
         toast.error(`${errorCount} file(s) failed to upload`);
-        
+
         // Only reset files if there were no successful uploads
         if (successCount === 0) {
           setFiles([]);
@@ -275,7 +345,14 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
     }
   };
 
-  const canUpload = files.length > 0 && files.some(file => file.status === 'pending');
+  const canUpload =
+    files.length > 0 &&
+    files.some((file) => file.status === 'pending') &&
+    files.every(
+      (file) =>
+        file.status !== 'pending' ||
+        (file.slug && file.slug.length >= 3 && /^[a-z0-9_-]+$/.test(file.slug))
+    );
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -288,10 +365,10 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
           {files.length === 0 ? (
             <div
               className={cn(
-                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                dragActive 
-                  ? "border-primary bg-primary/5" 
-                  : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+                dragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
               )}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -313,12 +390,16 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                 className="hidden"
                 id="file-upload"
                 onChange={handleFileInput}
-                accept={mediaType ? {
-                  image: 'image/*',
-                  audio: 'audio/*',
-                  video: 'video/*',
-                  document: '.pdf,.doc,.docx'
-                }[mediaType] : undefined}
+                accept={
+                  mediaType
+                    ? {
+                        image: 'image/*',
+                        audio: 'audio/*',
+                        video: 'video/*',
+                        document: '.pdf,.doc,.docx',
+                      }[mediaType]
+                    : undefined
+                }
               />
               <label htmlFor="file-upload">
                 <Button className="mt-4" asChild>
@@ -339,16 +420,19 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                             <FileIcon className="h-8 w-8 text-muted-foreground" />
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 space-y-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-medium">{fileItem.file.name}</h3>
+                              <h3 className="font-medium">
+                                {fileItem.file.name}
+                              </h3>
                               <p className="text-sm text-muted-foreground">
-                                {formatFileSize(fileItem.file.size)} • {fileItem.mediaType}
+                                {formatFileSize(fileItem.file.size)} •{' '}
+                                {fileItem.mediaType}
                               </p>
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
                               {fileItem.status === 'success' && (
                                 <Check className="h-5 w-5 text-green-600" />
@@ -373,51 +457,146 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                           </div>
 
                           {fileItem.status === 'uploading' && (
-                            <Progress value={fileItem.progress} className="w-full" />
+                            <Progress
+                              value={fileItem.progress}
+                              className="w-full"
+                            />
                           )}
 
                           {fileItem.status === 'error' && (
-                            <p className="text-sm text-destructive">{fileItem.error}</p>
+                            <p className="text-sm text-destructive">
+                              {fileItem.error}
+                            </p>
                           )}
 
                           {fileItem.status === 'pending' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor={`media-type-${index}`}>Media Type</Label>
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-2 ">
+                                <Label htmlFor={`media-type-${index}`}>
+                                  Media Type
+                                </Label>
                                 <Select
                                   value={fileItem.mediaType}
-                                  onValueChange={(value) => updateFileData(index, 'mediaType', value)}
+                                  onValueChange={(value) =>
+                                    updateFileData(index, 'mediaType', value)
+                                  }
                                   disabled={isUploading}
                                 >
-                                  <SelectTrigger id={`media-type-${index}`}>
+                                  <SelectTrigger
+                                    className="w-full"
+                                    id={`media-type-${index}`}
+                                  >
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="image">Image</SelectItem>
                                     <SelectItem value="audio">Audio</SelectItem>
                                     <SelectItem value="video">Video</SelectItem>
-                                    <SelectItem value="document">Document</SelectItem>
+                                    <SelectItem value="document">
+                                      Document
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
 
                               <div className="space-y-2">
-                                <Label htmlFor={`alt-text-${index}`}>Alt Text</Label>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`slug-${index}`}>
+                                    Slug *
+                                  </Label>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      updateFileData(
+                                        index,
+                                        'slug',
+                                        generateSlug(fileItem.file.name)
+                                      )
+                                    }
+                                    disabled={isUploading}
+                                    className="gap-1 text-xs h-6 px-2"
+                                  >
+                                    <RefreshCw className="h-3 w-3" />
+                                    Regenerate
+                                  </Button>
+                                </div>
+                                <Input
+                                  id={`slug-${index}`}
+                                  value={fileItem.slug}
+                                  onChange={(e) =>
+                                    updateFileData(
+                                      index,
+                                      'slug',
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="url-friendly-identifier"
+                                  disabled={isUploading}
+                                  className={
+                                    !fileItem.slug ||
+                                    fileItem.slug.length < 3 ||
+                                    !/^[a-z0-9_-]+$/.test(fileItem.slug)
+                                      ? 'border-destructive'
+                                      : ''
+                                  }
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Required URL-friendly identifier (lowercase
+                                  letters, numbers, hyphens, underscores, min 3
+                                  chars)
+                                </p>
+                                {(!fileItem.slug ||
+                                  fileItem.slug.length < 3) && (
+                                  <p className="text-xs text-destructive">
+                                    Slug is required and must be at least 3
+                                    characters
+                                  </p>
+                                )}
+                                {fileItem.slug &&
+                                  fileItem.slug.length >= 3 &&
+                                  !/^[a-z0-9_-]+$/.test(fileItem.slug) && (
+                                    <p className="text-xs text-destructive">
+                                      Slug must contain only lowercase letters,
+                                      numbers, hyphens, and underscores
+                                    </p>
+                                  )}
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor={`alt-text-${index}`}>
+                                  Alt Text
+                                </Label>
                                 <Input
                                   id={`alt-text-${index}`}
                                   value={fileItem.altText}
-                                  onChange={(e) => updateFileData(index, 'altText', e.target.value)}
+                                  onChange={(e) =>
+                                    updateFileData(
+                                      index,
+                                      'altText',
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="Optional alt text"
                                   disabled={isUploading}
                                 />
                               </div>
 
-                              <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor={`description-${index}`}>Description</Label>
+                              <div className="space-y-2">
+                                <Label htmlFor={`description-${index}`}>
+                                  Description
+                                </Label>
                                 <Textarea
                                   id={`description-${index}`}
                                   value={fileItem.description}
-                                  onChange={(e) => updateFileData(index, 'description', e.target.value)}
+                                  onChange={(e) =>
+                                    updateFileData(
+                                      index,
+                                      'description',
+                                      e.target.value
+                                    )
+                                  }
                                   placeholder="Optional description"
                                   disabled={isUploading}
                                   rows={2}
@@ -443,7 +622,7 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
           >
             {isUploading ? 'Uploading...' : 'Close'}
           </Button>
-          
+
           {files.length > 0 && (
             <Button
               onClick={handleUploadAll}
@@ -455,11 +634,12 @@ export const MediaUploadDialog: React.FC<MediaUploadDialogProps> = ({
                   Uploading...
                 </>
               ) : (
-                `Upload ${files.filter(f => f.status === 'pending').length} file(s)`
+                `Upload ${
+                  files.filter((f) => f.status === 'pending').length
+                } file(s)`
               )}
             </Button>
           )}
-          
         </DialogFooter>
       </DialogContent>
     </Dialog>

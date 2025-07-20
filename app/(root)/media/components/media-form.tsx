@@ -39,18 +39,23 @@ import {
   Upload,
   Disc,
   Clock,
-  Mic
+  Mic,
+  RefreshCw
 } from 'lucide-react';
 import { MediaWithProfile } from '@/actions/media/get-media';
 import { useUpdateMediaMutation, useDeleteMediaMutation } from '@/actions/media/media-queries';
 import { MediaUploadDialog } from '@/components/media/media-upload-dialog';
 import { toast } from 'sonner';
 import NextImage from 'next/image';
+import { generateSlug } from '@/lib/utils';
 
 const mediaFormSchema = z.object({
   alt_text: z.string().optional(),
   description: z.string().optional(),
   transcription: z.string().optional(),
+  slug: z.string()
+    .min(3, 'Slug must be at least 3 characters long')
+    .regex(/^[a-z0-9_-]+$/, 'Slug must contain only lowercase letters, numbers, hyphens, and underscores'),
 });
 
 const audioMetadataSchema = z.object({
@@ -127,6 +132,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       alt_text: media.alt_text || '',
       description: media.description || '',
       transcription: media.transcription || '',
+      slug: media.slug || generateSlug(media.original_name),
     },
   });
 
@@ -152,6 +158,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
       alt_text: data.alt_text,
       description: data.description,
       transcription: data.transcription,
+      slug: data.slug,
     }, {
       onSuccess: () => {
         toast.success('Media updated successfully');
@@ -184,6 +191,12 @@ export const MediaForm: React.FC<MediaFormProps> = ({
 
   const handleUploadSuccess = () => {
     // Upload completed successfully - user can manually close the dialog
+  };
+
+  const handleRegenerateSlug = () => {
+    const newSlug = generateSlug(media.original_name);
+    form.setValue('slug', newSlug);
+    toast.success('Slug regenerated from filename');
   };
 
   const handleExtractMetadata = async () => {
@@ -573,6 +586,35 @@ export const MediaForm: React.FC<MediaFormProps> = ({
               <p className="text-xs text-muted-foreground">
                 Helps screen readers and improves accessibility
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="slug">Slug *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRegenerateSlug}
+                  className="gap-1 text-xs"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Regenerate
+                </Button>
+              </div>
+              <Input
+                id="slug"
+                {...form.register('slug')}
+                placeholder="url-friendly-identifier"
+              />
+              <p className="text-xs text-muted-foreground">
+                Required URL-friendly identifier using only lowercase letters, numbers, hyphens, and underscores (minimum 3 characters)
+              </p>
+              {form.formState.errors.slug && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.slug.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

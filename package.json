@@ -8,9 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "types": "bunx supabase gen types typescript --project-id \"oonuyqodigregozwqjsn\" --schema public > types/types_db.ts",
-    "migrate:audio": "tsx scripts/migrate-audio-files.ts",
-    "update:audio-urls": "tsx scripts/update-article-audio-urls.ts",
-    "migrate:media": "npm run migrate:audio && npm run update:audio-urls"
+    "update:audio-urls": "tsx scripts/update-article-audio-urls.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
