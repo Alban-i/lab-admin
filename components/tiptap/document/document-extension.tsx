@@ -24,36 +24,43 @@ export const CustomDocumentExtension = Node.create<DocumentOptions>({
 
   addAttributes() {
     return {
-      src: { default: null },
-      title: { default: null },
-      fileType: { default: null },
-      fileSize: { default: null },
+      src: { 
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-src'),
+        renderHTML: () => ({}),
+      },
+      title: { 
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-title'),
+        renderHTML: () => ({}),
+      },
+      fileType: { 
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-file-type'),
+        renderHTML: () => ({}),
+      },
+      fileSize: { 
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-file-size'),
+        renderHTML: () => ({}),
+      },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-custom-document]' }];
+    return [{ tag: 'div[data-document]' }];
   },
 
   renderHTML({ node, HTMLAttributes }) {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-custom-document': true,
+        'data-document': true,
         'data-src': node.attrs.src,
         'data-title': node.attrs.title,
         'data-file-type': node.attrs.fileType,
         'data-file-size': node.attrs.fileSize,
       }),
-      [
-        'a',
-        {
-          href: node.attrs.src,
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        },
-        node.attrs.title || 'Download Document',
-      ],
     ];
   },
 
