@@ -23,6 +23,7 @@ import {
   AlignRight,
   Asterisk,
   Bold,
+  BookOpen,
   Code,
   Columns,
   Heading1,
@@ -72,6 +73,8 @@ import { MediaLibraryModal } from '../media/media-library-modal';
 import { MediaWithProfile } from '@/actions/media/get-media';
 import { addArticleMedia } from '@/actions/media/add-article-media';
 import { toast } from 'sonner';
+import { GlossaryTermExtension } from './glossary/glossary-term-extension';
+import { GlossarySelectorDialog } from './glossary/glossary-selector-dialog';
 
 interface EditorProps {
   content?: string;
@@ -88,13 +91,18 @@ interface UploadResult {
     | string;
 }
 
-export default function Editor({ content = '', onChange, articleId, onMediaAdded }: EditorProps) {
+export default function Editor({
+  content = '',
+  onChange,
+  articleId,
+  onMediaAdded,
+}: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
-
-
+  const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -141,6 +149,7 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
       DynamicPostReference,
       QuoteWithSourceExtension,
       QuoteWithTranslationExtension,
+      GlossaryTermExtension,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -255,10 +264,6 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
     [editor]
   );
 
-
-
-
-
   const toggleDirection = useCallback(() => {
     if (!editor) return;
     const newDirection = direction === 'ltr' ? 'rtl' : 'ltr';
@@ -312,10 +317,12 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
       switch (media.media_type) {
         case 'audio':
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any).setAudio({
-            src: media.url,
-            title: media.original_name,
-          }).run();
+          (editor.chain().focus() as any)
+            .setAudio({
+              src: media.url,
+              title: media.original_name,
+            })
+            .run();
           break;
         case 'image':
           editor
@@ -330,18 +337,22 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
           break;
         case 'video':
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any).setVideo({
-            src: media.url,
-            title: media.original_name,
-          }).run();
+          (editor.chain().focus() as any)
+            .setVideo({
+              src: media.url,
+              title: media.original_name,
+            })
+            .run();
           break;
         case 'document':
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any).setDocument({
-            src: media.url,
-            title: media.original_name,
-            fileType: media.original_name?.split('.').pop()?.toUpperCase(),
-          }).run();
+          (editor.chain().focus() as any)
+            .setDocument({
+              src: media.url,
+              title: media.original_name,
+              fileType: media.original_name?.split('.').pop()?.toUpperCase(),
+            })
+            .run();
           break;
       }
 
@@ -716,6 +727,23 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
             }
           }}
         />
+
+        {/* GLOSSARY TERMS */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const { from, to } = editor.state.selection;
+            const text = editor.state.doc.textBetween(from, to);
+            setSelectedText(text);
+            setIsGlossarySelectorOpen(true);
+          }}
+          title="Add Glossary Term"
+        >
+          <BookOpen className="h-4 w-4 mr-2" />
+          Glossary
+        </Button>
       </div>
 
       {/* ERROR MESSAGE */}
@@ -762,7 +790,6 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
         </div>
       )}
 
-
       {/* EDITOR CONTENT */}
       <EditorContent
         editor={editor}
@@ -771,14 +798,14 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
       <div className="mt-2 text-sm text-muted-foreground">
         {editor.storage.characterCount.characters()} characters
       </div>
-      {/* <div className="mt-4">
+      <div className="mt-4">
         <h3 className="text-sm font-medium mb-2">Raw HTML</h3>
         <pre className="bg-muted p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md">
           <code className="whitespace-pre-wrap">
             {editor.getHTML().replace(/></g, '>\n<')}
           </code>
         </pre>
-      </div> */}
+      </div>
 
       {/* Media Library Modal */}
       <MediaLibraryModal
@@ -788,6 +815,40 @@ export default function Editor({ content = '', onChange, articleId, onMediaAdded
         title="Select Media"
       />
 
+      {/* Glossary Selector Dialog */}
+      <GlossarySelectorDialog
+        isOpen={isGlossarySelectorOpen}
+        onClose={() => setIsGlossarySelectorOpen(false)}
+        onSelect={(term) => {
+          if (editor) {
+            const { from, to } = editor.state.selection;
+            const selectedText = editor.state.doc.textBetween(from, to);
+
+            if (selectedText) {
+              // Mark selected text as glossary term
+              editor
+                .chain()
+                .focus()
+                .setGlossaryTerm(term.id.toString(), term.definition)
+                .run();
+            } else {
+              // Insert the term text and mark it
+              const currentPos = editor.state.selection.from;
+              editor
+                .chain()
+                .focus()
+                .insertContent(term.term)
+                .setTextSelection({
+                  from: currentPos,
+                  to: currentPos + term.term.length,
+                })
+                .setGlossaryTerm(term.id.toString(), term.definition)
+                .run();
+            }
+          }
+        }}
+        selectedText={selectedText}
+      />
     </div>
   );
 }

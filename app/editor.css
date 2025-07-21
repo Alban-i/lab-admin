@@ -18,6 +18,22 @@
   font-weight: 400;
 }
 
+/* Glossary Term Styling */
+.ProseMirror .glossary-term {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-bottom: 1px dotted rgb(59, 130, 246);
+  cursor: help;
+  padding: 1px 2px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.ProseMirror .glossary-term:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgb(59, 130, 246);
+}
+
 .ProseMirror ul {
   /* font-size: 1rem; */
   font-weight: 400;

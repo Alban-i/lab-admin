@@ -99,6 +99,11 @@ const navMainData = [
         icon: Hash,
         url: '/tags',
       },
+      {
+        title: 'Glossaries',
+        icon: BookOpen,
+        url: '/glossaries',
+      },
     ],
   },
   {

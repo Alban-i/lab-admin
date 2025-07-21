@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run types` - Generate TypeScript types from Supabase schema
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues automatically
+- `bun run dev` - Start development server with Turbopack
+- `bun run build` - Build for production
+- `bun run start` - Start production server
+- `bun run types` - Generate TypeScript types from Supabase schema
+- `bun run lint` - Run ESLint
+- `bun run lint:fix` - Fix ESLint issues automatically
 
 ## Architecture Overview
 
