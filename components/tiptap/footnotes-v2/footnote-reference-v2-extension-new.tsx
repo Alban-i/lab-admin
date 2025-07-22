@@ -1,6 +1,17 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { Plugin, PluginKey, NodeSelection } from '@tiptap/pm/state';
-import { v4 as uuidv4 } from 'uuid';
+// Generate UUID using native crypto API
+const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 const REFNUM_ATTR = 'data-reference-number';
 const REF_CLASS = 'footnote-ref footnote-ref-v2';
@@ -48,7 +59,7 @@ export const FootnoteReferenceV2Extension = Node.create({
           const id = anchor.getAttribute('data-id');
           const ref = anchor.getAttribute(REFNUM_ATTR);
           return {
-            'data-id': id ?? uuidv4(),
+            'data-id': id ?? generateUUID(),
             referenceNumber: ref ?? anchor.textContent,
           };
         },
@@ -67,7 +78,7 @@ export const FootnoteReferenceV2Extension = Node.create({
       'data-id': {
         renderHTML(attributes) {
           return {
-            'data-id': attributes['data-id'] || uuidv4(),
+            'data-id': attributes['data-id'] || generateUUID(),
           };
         },
       },
@@ -131,7 +142,7 @@ export const FootnoteReferenceV2Extension = Node.create({
         () =>
         ({ state, tr }) => {
           const node = this.type.create({
-            'data-id': uuidv4(),
+            'data-id': generateUUID(),
           });
           tr.insert(state.selection.anchor, node);
           return true;

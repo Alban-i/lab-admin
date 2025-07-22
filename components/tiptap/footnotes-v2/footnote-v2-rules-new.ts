@@ -155,7 +155,7 @@ export const FootnoteV2Rules = Extension.create({
         // If there are changes to the footnote references (added/deleted/dragged), 
         // append a transaction that updates the footnotes list accordingly
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        appendTransaction(transactions: any[], oldState: any, newState: any) {
+        appendTransaction(transactions: readonly any[], oldState: any, newState: any) {
           const newTr = newState.tr;
           let refsChanged = false;
 
