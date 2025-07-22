@@ -13,8 +13,10 @@ import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Footnote, FootnoteReference, Footnotes } from 'tiptap-footnotes';
 import { TextDirection } from 'tiptap-text-direction';
+import { FootnotesV2Extension } from './footnotes-v2/footnotes-v2-extension-new';
+import { FootnoteV2Extension } from './footnotes-v2/footnote-v2-extension-new';
+import { FootnoteReferenceV2Extension } from './footnotes-v2/footnote-reference-v2-extension-new';
 import QuoteWithSourceExtension from './quote/quote-with-source-extension';
 
 import { Button } from '@/components/ui/button';
@@ -110,7 +112,7 @@ export default function Editor({
         document: false,
       }),
       Document.extend({
-        content: 'block+ footnotes?',
+        content: 'block+ footnotesV2?',
       }),
       Highlight,
       Typography,
@@ -142,9 +144,9 @@ export default function Editor({
       }),
       LayoutExtension,
       LayoutColumnExtension,
-      Footnotes,
-      Footnote,
-      FootnoteReference,
+      FootnotesV2Extension,
+      FootnoteV2Extension,
+      FootnoteReferenceV2Extension,
       // PostReference,
       DynamicPostReference,
       QuoteWithSourceExtension,
@@ -303,10 +305,11 @@ export default function Editor({
     editor.chain().focus().insertContent(layoutStructure).run();
   }, [editor]);
 
-  const insertFootnote = useCallback(() => {
+
+  const insertFootnoteV2 = useCallback(() => {
     if (!editor) return;
 
-    editor.chain().focus().addFootnote().run();
+    editor.chain().focus().addFootnoteV2().run();
   }, [editor]);
 
   const handleMediaSelect = useCallback(
@@ -560,7 +563,7 @@ export default function Editor({
           type="button"
           variant="outline"
           size="sm"
-          onClick={insertFootnote}
+          onClick={insertFootnoteV2}
           title="Insert Footnote"
         >
           <Asterisk className="h-4 w-4 mr-2" />
