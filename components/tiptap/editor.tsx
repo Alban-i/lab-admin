@@ -13,7 +13,7 @@ import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { TextDirection } from 'tiptap-text-direction';
+import { AutoTextDirectionExtension } from './text-direction/auto-text-direction-extension';
 import { FootnotesV2Extension } from './footnotes-v2/footnotes-v2-extension-new';
 import { FootnoteV2Extension } from './footnotes-v2/footnote-v2-extension-new';
 import { FootnoteReferenceV2Extension } from './footnotes-v2/footnote-reference-v2-extension-new';
@@ -21,8 +21,6 @@ import QuoteWithSourceExtension from './quote/quote-with-source-extension';
 
 import { Button } from '@/components/ui/button';
 import {
-  AlignLeft,
-  AlignRight,
   Asterisk,
   Bold,
   BookOpen,
@@ -100,7 +98,6 @@ export default function Editor({
   onMediaAdded,
 }: EditorProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
@@ -135,9 +132,8 @@ export default function Editor({
       TableCell.extend({
         content: 'paragraph',
       }),
-      TextDirection.configure({
+      AutoTextDirectionExtension.configure({
         types: ['paragraph', 'heading'],
-        defaultDirection: 'ltr',
       }),
       Placeholder.configure({
         placeholder: '',
@@ -161,16 +157,6 @@ export default function Editor({
       attributes: {
         class:
           'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[200px] w-full',
-        dir: direction,
-      },
-      handleKeyDown: (_view, event) => {
-        if (event.key === 'Alt' && event.shiftKey) {
-          const newDirection = direction === 'ltr' ? 'rtl' : 'ltr';
-          setDirection(newDirection);
-          editor?.commands.setTextDirection(newDirection);
-          return true;
-        }
-        return false;
       },
       handleDrop: (view: EditorView, event: DragEvent, _slice, _moved) => {
         try {
@@ -245,6 +231,7 @@ export default function Editor({
     setIsMounted(true);
   }, []);
 
+
   const onImageUpload = useCallback(
     (result: UploadResult) => {
       if (
@@ -266,12 +253,6 @@ export default function Editor({
     [editor]
   );
 
-  const toggleDirection = useCallback(() => {
-    if (!editor) return;
-    const newDirection = direction === 'ltr' ? 'rtl' : 'ltr';
-    setDirection(newDirection);
-    editor.commands.setTextDirection(newDirection);
-  }, [editor, direction]);
 
   const insertLayout = useCallback(() => {
     if (!editor) return;
@@ -664,19 +645,6 @@ export default function Editor({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Toggle
-          pressed={direction === 'rtl'}
-          onPressedChange={toggleDirection}
-          size="sm"
-          variant="outline"
-          title="Toggle Text Direction (Alt+Shift)"
-        >
-          {direction === 'ltr' ? (
-            <AlignLeft className="h-4 w-4" />
-          ) : (
-            <AlignRight className="h-4 w-4" />
-          )}
-        </Toggle>
 
         {/* SEPARATOR 1 */}
         <Separator className="h-6" />
