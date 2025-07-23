@@ -4,51 +4,65 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import { mergeAttributes, CommandProps } from '@tiptap/core';
 import ImageNodeView from './image-node-view';
 
+interface ImageAttributes {
+  width?: string | null;
+  height?: string | null;
+  alt?: string | null;
+  title?: string | null;
+  alignment?: string;
+  legend?: string | null;
+}
+
+interface ImageNode {
+  attrs: ImageAttributes & { src: string };
+}
+
 const CustomImageExtension = Image.extend({
   name: 'customImage',
 
   addOptions() {
     return {
-      ...this.parent?.(),
+      inline: true,
+      allowBase64: true,
     };
   },
 
   addAttributes() {
-    const parentAttributes = this.parent?.() || {};
+    const parentAttributes = {};
 
     return {
       ...parentAttributes,
       width: {
         default: null,
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           if (!attributes.width) return {};
           return { width: attributes.width };
         },
       },
       height: {
         default: null,
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           if (!attributes.height) return {};
           return { height: attributes.height };
         },
       },
       alt: {
         default: null,
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           if (!attributes.alt) return {};
           return { alt: attributes.alt };
         },
       },
       title: {
         default: null,
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           if (!attributes.title) return {};
           return { title: attributes.title };
         },
       },
       alignment: {
         default: 'center',
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           const margin =
             attributes.alignment === 'left'
               ? '0 auto 0 0'
@@ -60,7 +74,7 @@ const CustomImageExtension = Image.extend({
             style: `display: block; margin: ${margin}`,
           };
         },
-        parseHTML: (element) => {
+        parseHTML: (element: HTMLElement) => {
           // Try to get from the parent <figure> if available
           if (
             element.parentElement &&
@@ -76,22 +90,19 @@ const CustomImageExtension = Image.extend({
       },
       legend: {
         default: null,
-        renderHTML: (attributes) => {
+        renderHTML: (attributes: ImageAttributes) => {
           if (!attributes.legend) return {};
           return { 'data-legend': attributes.legend };
         },
-        parseHTML: (element) => element.getAttribute('data-legend') || null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-legend') || null,
       },
     };
   },
 
   addCommands() {
-    const parentCommands = this.parent?.() || {};
-
     return {
-      ...parentCommands,
       setImage:
-        (options) =>
+        (options: ImageAttributes) =>
         ({ commands }: CommandProps) => {
           return commands.insertContent({
             type: this.name,
@@ -110,7 +121,7 @@ const CustomImageExtension = Image.extend({
     return ReactNodeViewRenderer(ImageNodeView);
   },
 
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }: { node: ImageNode; HTMLAttributes: Record<string, unknown> }) {
     const { src, alt, title, width, height, alignment } = node.attrs;
     const margin =
       alignment === 'left'

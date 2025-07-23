@@ -1,14 +1,10 @@
 'use client';
 
-import CharacterCount from '@tiptap/extension-character-count';
+import { CharacterCount, Placeholder } from '@tiptap/extensions';
 import Document from '@tiptap/extension-document';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
-import { Table } from '@tiptap/extension-table';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableRow } from '@tiptap/extension-table-row';
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -150,6 +146,8 @@ export default function Editor({
       GlossaryTermExtension,
     ],
     content,
+    immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
+    shouldRerenderOnTransaction: true, // Maintain v2 behavior during migration
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },

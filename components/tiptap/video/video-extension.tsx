@@ -1,4 +1,5 @@
-import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import VideoNodeView from './video-node-view';
 
@@ -7,7 +8,7 @@ export interface VideoOptions {
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomVideoExtension = Node.create<VideoOptions>({
+export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
   name: 'video',
   group: 'block',
   inline: false,
@@ -34,7 +35,7 @@ export const CustomVideoExtension = Node.create<VideoOptions>({
     return [{ tag: 'video[data-video]' }];
   },
 
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
     return [
       'video',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {

@@ -1,4 +1,5 @@
-import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import AudioNodeView from './audio-node-view';
 
@@ -7,7 +8,7 @@ export interface AudioOptions {
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomAudioExtension = Node.create<AudioOptions>({
+export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   name: 'audio',
   group: 'block',
   inline: false,
@@ -33,7 +34,7 @@ export const CustomAudioExtension = Node.create<AudioOptions>({
     return [{ tag: 'audio[data-audio]' }];
   },
 
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
     return [
       'audio',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {

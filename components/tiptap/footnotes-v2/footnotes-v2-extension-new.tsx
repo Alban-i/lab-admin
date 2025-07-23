@@ -1,4 +1,5 @@
 import OrderedList from '@tiptap/extension-ordered-list';
+import { Editor } from '@tiptap/core';
 import { FootnoteV2Rules } from './footnote-v2-rules-new';
 
 export const FootnotesV2Extension = OrderedList.extend({
@@ -35,7 +36,7 @@ export const FootnotesV2Extension = OrderedList.extend({
     return {
       // Override the default behavior of Mod-a:
       // Rather than selecting the whole text content of the editor, only select the text inside the current footnote
-      'Mod-a': ({ editor }) => {
+      'Mod-a': ({ editor }: { editor: Editor }) => {
         try {
           const { selection } = editor.state;
           const { $from } = selection;

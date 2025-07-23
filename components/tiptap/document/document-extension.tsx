@@ -1,4 +1,5 @@
-import { Node, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import DocumentNodeView from './document-node-view';
 
@@ -7,7 +8,7 @@ export interface DocumentOptions {
   HTMLAttributes: Record<string, string | number | boolean>;
 }
 
-export const CustomDocumentExtension = Node.create<DocumentOptions>({
+export const CustomDocumentExtension = TipTapNode.create<DocumentOptions>({
   name: 'customDocument',
   group: 'block',
   inline: false,
@@ -26,22 +27,22 @@ export const CustomDocumentExtension = Node.create<DocumentOptions>({
     return {
       src: { 
         default: null,
-        parseHTML: (element) => element.getAttribute('data-src'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-src'),
         renderHTML: () => ({}),
       },
       title: { 
         default: null,
-        parseHTML: (element) => element.getAttribute('data-title'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-title'),
         renderHTML: () => ({}),
       },
       fileType: { 
         default: null,
-        parseHTML: (element) => element.getAttribute('data-file-type'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-file-type'),
         renderHTML: () => ({}),
       },
       fileSize: { 
         default: null,
-        parseHTML: (element) => element.getAttribute('data-file-size'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-file-size'),
         renderHTML: () => ({}),
       },
     };
@@ -51,7 +52,7 @@ export const CustomDocumentExtension = Node.create<DocumentOptions>({
     return [{ tag: 'div[data-document]' }];
   },
 
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {

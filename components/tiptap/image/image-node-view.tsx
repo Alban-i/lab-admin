@@ -30,7 +30,7 @@ interface ImageNodeViewProps extends NodeViewProps {
   }) => void;
   deleteNode: () => void;
   selected: boolean;
-  getPos: () => number;
+  getPos: () => number | undefined;
   editor: TiptapEditor;
 }
 
@@ -105,9 +105,12 @@ const ImageNodeView = ({
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
+    const pos = getPos();
+    if (pos === undefined) return;
+    
     // Store the current position and node data in the dataTransfer
     const nodeData = {
-      pos: getPos(),
+      pos,
       node: {
         ...node.toJSON(),
         attrs: {
