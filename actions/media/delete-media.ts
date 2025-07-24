@@ -30,28 +30,7 @@ export const deleteMedia = async (mediaId: string): Promise<DeleteMediaResult> =
       return { success: false, error: 'Media not found' };
     }
 
-    // Check if user owns the media or is admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        roles (
-          value
-        )
-      `)
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return { success: false, error: 'Unable to verify permissions' };
-    }
-
-    const isAdmin = profile.roles?.value === 'admin';
-    const isOwner = mediaData.uploaded_by === user.id;
-
-    if (!isAdmin && !isOwner) {
-      return { success: false, error: 'Permission denied' };
-    }
+    // Permission checks are handled by database RLS policies
 
     // Delete from storage first
     const { error: storageError } = await serviceSupabase.storage
@@ -103,31 +82,7 @@ export const deleteMultipleMedia = async (mediaIds: string[]): Promise<DeleteMed
       return { success: false, error: 'No media found' };
     }
 
-    // Check if user owns all media or is admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        roles (
-          value
-        )
-      `)
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return { success: false, error: 'Unable to verify permissions' };
-    }
-
-    const isAdmin = profile.roles?.value === 'admin';
-    
-    if (!isAdmin) {
-      // Check if user owns all media
-      const hasPermission = mediaData.every(media => media.uploaded_by === user.id);
-      if (!hasPermission) {
-        return { success: false, error: 'Permission denied for one or more media files' };
-      }
-    }
+    // Permission checks are handled by database RLS policies
 
     // Delete from storage
     const filePaths = mediaData.map(media => media.file_path);

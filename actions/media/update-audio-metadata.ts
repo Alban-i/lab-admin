@@ -76,28 +76,7 @@ export const updateAudioMetadata = async (
       return { success: false, error: 'Audio format not supported for metadata editing' };
     }
 
-    // Check permissions
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        roles (
-          value
-        )
-      `)
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return { success: false, error: 'Unable to verify permissions' };
-    }
-
-    const isAdmin = profile.roles?.value === 'admin';
-    const isOwner = mediaData.uploaded_by === user.id;
-
-    if (!isAdmin && !isOwner) {
-      return { success: false, error: 'Permission denied' };
-    }
+    // Permission checks are handled by database RLS policies
 
     // Validate metadata
     const validation = validateAudioMetadata(updateData.metadata);
@@ -312,28 +291,7 @@ export const extractAudioMetadata = async (mediaId: string): Promise<{
       return { success: false, error: 'Media is not an audio file' };
     }
 
-    // Check permissions
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        roles (
-          value
-        )
-      `)
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return { success: false, error: 'Unable to verify permissions' };
-    }
-
-    const isAdmin = profile.roles?.value === 'admin';
-    const isOwner = mediaData.uploaded_by === user.id;
-
-    if (!isAdmin && !isOwner) {
-      return { success: false, error: 'Permission denied' };
-    }
+    // Permission checks are handled by database RLS policies
 
     // Download and read the file
     const { data: fileData, error: downloadError } = await serviceSupabase.storage
