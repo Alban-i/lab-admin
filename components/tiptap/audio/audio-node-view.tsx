@@ -72,7 +72,8 @@ const AudioNodeView = ({
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [node.attrs.src, node.attrs.title]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();

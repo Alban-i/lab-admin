@@ -57,7 +57,7 @@ const VideoNodeView = ({
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('ended', handleEnded);
     };
-  }, [node.attrs.src]);
+  }, []);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.preventDefault();
