@@ -45,25 +45,41 @@ const AudioNodeView = ({
       setCurrentTime(audio.currentTime);
     };
 
+    const handlePlay = () => setPlaying(true);
+    const handlePause = () => setPlaying(false);
+    const handleEnded = () => setPlaying(false);
+
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
 
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
     };
-  }, [node.attrs.title]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const togglePlay = (e: React.MouseEvent) => {
+  const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+
+    try {
+      if (playing) {
+        audioRef.current.pause();
+      } else {
+        await audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('Audio playback error:', error);
+      setPlaying(false);
     }
-    setPlaying(!playing);
   };
 
   const skip = (e: React.MouseEvent, delta: number) => {
@@ -77,6 +93,9 @@ const AudioNodeView = ({
   };
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || time < 0) {
+      return '0:00';
+    }
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -127,7 +146,7 @@ const AudioNodeView = ({
           title={node.attrs.title || ''}
           draggable={false}
           className="w-full"
-          onEnded={() => setPlaying(false)}
+          preload="metadata"
         />
         {selected && (
           <div
@@ -191,7 +210,13 @@ const AudioNodeView = ({
             >
               <div
                 className="h-full bg-blue-500 rounded-full transition-all"
-                style={{ width: `${(currentTime / duration) * 100}%` }}
+                style={{
+                  width: `${
+                    duration > 0 && isFinite(duration)
+                      ? (currentTime / duration) * 100
+                      : 0
+                  }%`
+                }}
               />
             </div>
 
