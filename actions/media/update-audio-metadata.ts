@@ -2,14 +2,13 @@
 
 import { createClient } from '@/providers/supabase/server';
 import { createClient as createServiceClient } from '@/providers/supabase/server-role';
-import { 
-  AudioMetadata, 
-  readAudioMetadata, 
-  writeAudioMetadata, 
+import {
+  AudioMetadata,
+  readAudioMetadata,
+  writeAudioMetadata,
   validateAudioMetadata,
   isSupportedAudioFormat
 } from '@/lib/audio-metadata';
-import { TablesUpdate } from '@/types/types_db';
 
 export type AudioMetadataUpdateResult = {
   success: boolean;
@@ -149,7 +148,7 @@ export const updateAudioMetadata = async (
 
         // Upload the modified file
         console.log('📄 Creating File object...');
-        const file = new File([writeResult.buffer], newFileName, { type: mediaData.mime_type });
+        const file = new File([new Uint8Array(writeResult.buffer)], newFileName, { type: mediaData.mime_type });
         console.log('✅ File object created:', {
           name: file.name,
           size: file.size,
@@ -199,7 +198,22 @@ export const updateAudioMetadata = async (
 
     // Update database with new metadata
     console.log('💾 Preparing database update...');
-    const dbUpdateData: TablesUpdate<'media'> = {
+    const dbUpdateData: {
+      audio_title: string | null;
+      audio_artist: string | null;
+      audio_album: string | null;
+      audio_genre: string | null;
+      audio_year: string | null;
+      audio_track_number: string | null;
+      audio_album_artist: string | null;
+      audio_composer: string | null;
+      audio_comment: string | null;
+      has_cover_art: boolean;
+      updated_at: string;
+      url?: string;
+      file_name?: string;
+      file_path?: string;
+    } = {
       audio_title: updateData.metadata.title || null,
       audio_artist: updateData.metadata.artist || null,
       audio_album: updateData.metadata.album || null,

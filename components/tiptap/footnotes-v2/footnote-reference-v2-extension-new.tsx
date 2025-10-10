@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes, nodeInputRule } from '@tiptap/core';
 import { Plugin, PluginKey, NodeSelection } from '@tiptap/pm/state';
 // Generate UUID using native crypto API
 const generateUUID = (): string => {
@@ -152,18 +152,13 @@ export const FootnoteReferenceV2Extension = Node.create({
 
   addInputRules() {
     return [
-      // Input rule for [^text] syntax (copied from original)
-      {
-        find: /\[\^(.*?)\]/,
+      nodeInputRule({
+        find: /\[\^(.*?)\]$/,
         type: this.type,
-        handler({ range, match, chain }) {
-          const start = range.from;
-          const end = range.to;
-          if (match[1]) {
-            chain().deleteRange({ from: start, to: end }).addFootnoteV2().run();
-          }
-        },
-      },
+        getAttributes: (match) => ({
+          'data-id': generateUUID(),
+        }),
+      }),
     ];
   },
 });
