@@ -20,20 +20,55 @@ const AudioNodeView = ({
     album?: string;
   }>({});
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const durationSetRef = useRef(false);
+
+  // Log component mount and validate source
+  useEffect(() => {
+    console.log('[AudioNodeView] Component mounted with src:', node.attrs.src);
+    console.log('[AudioNodeView] Audio title:', node.attrs.title);
+
+    if (!node.attrs.src) {
+      console.error('[AudioNodeView] No audio source provided!');
+      setError('No audio source provided');
+      setLoading(false);
+    }
+
+    return () => {
+      console.log('[AudioNodeView] Component unmounting');
+    };
+  }, [node.attrs.src]);
 
   useEffect(() => {
     if (!audioRef.current) return;
 
     const audio = audioRef.current;
+    console.log('[AudioNodeView] Setting up event listeners');
+    console.log('[AudioNodeView] Initial readyState:', audio.readyState);
+    console.log('[AudioNodeView] Initial networkState:', audio.networkState);
 
     const handleLoadedMetadata = () => {
+      console.log('[AudioNodeView] loadedmetadata event fired');
+      console.log('[AudioNodeView] Audio duration:', audio.duration);
+      console.log('[AudioNodeView] Duration is finite:', isFinite(audio.duration));
+      console.log('[AudioNodeView] Duration set ref:', durationSetRef.current);
+
       if (isFinite(audio.duration) && audio.duration > 0) {
-        setDuration(audio.duration);
+        if (!durationSetRef.current) {
+          console.log('[AudioNodeView] Setting duration to:', audio.duration);
+          setDuration(audio.duration);
+          durationSetRef.current = true;
+        }
+        // Always set loading to false when we have valid metadata
+        setLoading(false);
       }
+
       // Try to get ID3 metadata if available
       if ('mediaSession' in navigator) {
         const mediaMetadata = navigator.mediaSession.metadata;
         if (mediaMetadata) {
+          console.log('[AudioNodeView] Media metadata found:', mediaMetadata);
           setMetadata({
             title: mediaMetadata.title || node.attrs.title,
             artist: mediaMetadata.artist,
@@ -44,8 +79,19 @@ const AudioNodeView = ({
     };
 
     const handleDurationChange = () => {
+      console.log('[AudioNodeView] durationchange event fired');
+      console.log('[AudioNodeView] Current duration:', audio.duration);
+      console.log('[AudioNodeView] Duration already set:', durationSetRef.current);
+
+      // Only update duration if we haven't set it yet and it's valid
       if (isFinite(audio.duration) && audio.duration > 0) {
-        setDuration(audio.duration);
+        if (!durationSetRef.current) {
+          console.log('[AudioNodeView] Updating duration to:', audio.duration);
+          setDuration(audio.duration);
+          durationSetRef.current = true;
+        }
+        // Always set loading to false when we have valid duration
+        setLoading(false);
       }
     };
 
@@ -53,9 +99,58 @@ const AudioNodeView = ({
       setCurrentTime(audio.currentTime);
     };
 
-    const handlePlay = () => setPlaying(true);
-    const handlePause = () => setPlaying(false);
-    const handleEnded = () => setPlaying(false);
+    const handlePlay = () => {
+      console.log('[AudioNodeView] Audio started playing');
+      setPlaying(true);
+    };
+
+    const handlePause = () => {
+      console.log('[AudioNodeView] Audio paused');
+      setPlaying(false);
+    };
+
+    const handleEnded = () => {
+      console.log('[AudioNodeView] Audio playback ended');
+      setPlaying(false);
+    };
+
+    const handleError = (e: Event) => {
+      console.error('[AudioNodeView] Audio error event:', e);
+      console.error('[AudioNodeView] Audio error code:', audio.error?.code);
+      console.error('[AudioNodeView] Audio error message:', audio.error?.message);
+      console.error('[AudioNodeView] Network state:', audio.networkState);
+      console.error('[AudioNodeView] Ready state:', audio.readyState);
+
+      let errorMessage = 'Failed to load audio';
+      if (audio.error) {
+        switch (audio.error.code) {
+          case 1:
+            errorMessage = 'Audio loading aborted';
+            break;
+          case 2:
+            errorMessage = 'Network error while loading audio';
+            break;
+          case 3:
+            errorMessage = 'Audio decoding failed';
+            break;
+          case 4:
+            errorMessage = 'Audio format not supported';
+            break;
+        }
+      }
+      setError(errorMessage);
+      setLoading(false);
+    };
+
+    const handleLoadStart = () => {
+      console.log('[AudioNodeView] Audio load started');
+      setLoading(true);
+    };
+
+    const handleCanPlay = () => {
+      console.log('[AudioNodeView] Audio can play');
+      setLoading(false);
+    };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('durationchange', handleDurationChange);
@@ -63,14 +158,21 @@ const AudioNodeView = ({
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
+      console.log('[AudioNodeView] Cleaning up event listeners');
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('canplay', handleCanPlay);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -78,16 +180,35 @@ const AudioNodeView = ({
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.warn('[AudioNodeView] togglePlay called but audioRef is null');
+      return;
+    }
+
+    const audio = audioRef.current;
+    console.log('[AudioNodeView] togglePlay called, current playing state:', playing);
+    console.log('[AudioNodeView] Audio ready state:', audio.readyState);
+    console.log('[AudioNodeView] Audio network state:', audio.networkState);
+    console.log('[AudioNodeView] Audio paused:', audio.paused);
 
     try {
       if (playing) {
-        audioRef.current.pause();
+        console.log('[AudioNodeView] Attempting to pause audio');
+        audio.pause();
       } else {
-        await audioRef.current.play();
+        console.log('[AudioNodeView] Attempting to play audio');
+        await audio.play();
+        console.log('[AudioNodeView] Play promise resolved successfully');
       }
     } catch (error) {
-      console.error('Audio playback error:', error);
+      console.error('[AudioNodeView] Audio playback error:', error);
+      console.error('[AudioNodeView] Error details:', {
+        name: (error as Error).name,
+        message: (error as Error).message,
+        readyState: audio.readyState,
+        networkState: audio.networkState,
+      });
+      setError('Failed to play audio: ' + (error as Error).message);
       setPlaying(false);
     }
   };
@@ -95,11 +216,18 @@ const AudioNodeView = ({
   const skip = (e: React.MouseEvent, delta: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!audioRef.current) return;
-    audioRef.current.currentTime = Math.max(
-      0,
-      Math.min(audioRef.current.duration, audioRef.current.currentTime + delta)
-    );
+    if (!audioRef.current) {
+      console.warn('[AudioNodeView] skip called but audioRef is null');
+      return;
+    }
+    if (!isFinite(duration) || duration <= 0) {
+      console.warn('[AudioNodeView] skip called but duration is invalid:', duration);
+      return;
+    }
+    const audio = audioRef.current;
+    const newTime = Math.max(0, Math.min(duration, audio.currentTime + delta));
+    console.log('[AudioNodeView] Skipping from', audio.currentTime, 'to', newTime, 'delta:', delta);
+    audio.currentTime = newTime;
   };
 
   const formatTime = (time: number) => {
@@ -112,10 +240,19 @@ const AudioNodeView = ({
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.warn('[AudioNodeView] handleProgressClick called but audioRef is null');
+      return;
+    }
+    if (!isFinite(duration) || duration <= 0) {
+      console.warn('[AudioNodeView] handleProgressClick called but duration is invalid:', duration);
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
-    audioRef.current.currentTime = pos * duration;
+    const newTime = pos * duration;
+    console.log('[AudioNodeView] Progress bar clicked, seeking to:', newTime, 'position:', pos);
+    audioRef.current.currentTime = newTime;
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -157,6 +294,7 @@ const AudioNodeView = ({
           draggable={false}
           className="w-full"
           preload="metadata"
+          crossOrigin="anonymous"
         />
         {selected && (
           <div
@@ -197,6 +335,18 @@ const AudioNodeView = ({
         )}
         <div className="p-4 bg-gray-50 rounded-md" contentEditable={false}>
           <div className="space-y-2">
+            {/* Error message */}
+            {error && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            {/* Loading state */}
+            {loading && !error && (
+              <div className="text-sm text-gray-500">Loading audio...</div>
+            )}
+
             {/* Title and metadata */}
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -237,6 +387,7 @@ const AudioNodeView = ({
                 onClick={(e) => skip(e, -10)}
                 title="« 10s"
                 type="button"
+                disabled={!!error}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -245,6 +396,7 @@ const AudioNodeView = ({
                 onClick={togglePlay}
                 title={playing ? 'Pause' : 'Play'}
                 type="button"
+                disabled={!!error}
               >
                 {playing ? (
                   <Pause className="h-4 w-4" />
@@ -257,6 +409,7 @@ const AudioNodeView = ({
                 onClick={(e) => skip(e, 10)}
                 title="10s »"
                 type="button"
+                disabled={!!error}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
