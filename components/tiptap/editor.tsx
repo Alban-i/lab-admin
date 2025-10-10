@@ -147,7 +147,6 @@ export default function Editor({
     ],
     content,
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
-    shouldRerenderOnTransaction: true, // Maintain v2 behavior during migration
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
