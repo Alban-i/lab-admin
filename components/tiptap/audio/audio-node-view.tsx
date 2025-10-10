@@ -23,25 +23,25 @@ const AudioNodeView = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const durationSetRef = useRef(false);
-
-  // Log component mount and validate source
-  useEffect(() => {
-    console.log('[AudioNodeView] Component mounted with src:', node.attrs.src);
-    console.log('[AudioNodeView] Audio title:', node.attrs.title);
-
-    if (!node.attrs.src) {
-      console.error('[AudioNodeView] No audio source provided!');
-      setError('No audio source provided');
-      setLoading(false);
-    }
-
-    return () => {
-      console.log('[AudioNodeView] Component unmounting');
-    };
-  }, [node.attrs.src]);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (!audioRef.current) return;
+
+    // Only log and validate on first mount
+    if (!initializedRef.current) {
+      console.log('[AudioNodeView] Component mounted with src:', node.attrs.src);
+      console.log('[AudioNodeView] Audio title:', node.attrs.title);
+
+      if (!node.attrs.src) {
+        console.error('[AudioNodeView] No audio source provided!');
+        setError('No audio source provided');
+        setLoading(false);
+        return;
+      }
+
+      initializedRef.current = true;
+    }
 
     const audio = audioRef.current;
     console.log('[AudioNodeView] Setting up event listeners');
