@@ -27,7 +27,9 @@ const AudioNodeView = ({
     const audio = audioRef.current;
 
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
       // Try to get ID3 metadata if available
       if ('mediaSession' in navigator) {
         const mediaMetadata = navigator.mediaSession.metadata;
@@ -41,6 +43,12 @@ const AudioNodeView = ({
       }
     };
 
+    const handleDurationChange = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
+    };
+
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
     };
@@ -50,6 +58,7 @@ const AudioNodeView = ({
     const handleEnded = () => setPlaying(false);
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
@@ -57,13 +66,13 @@ const AudioNodeView = ({
 
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [node.attrs.src, node.attrs.title]);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();

@@ -40,7 +40,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -98,6 +98,7 @@ export default function Editor({
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const savedCursorPositionRef = useRef<number | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -294,14 +295,24 @@ export default function Editor({
     async (media: MediaWithProfile) => {
       if (!editor) return;
 
+      // Get saved cursor position, fallback to current selection
+      const position = savedCursorPositionRef.current ?? editor.state.selection.$anchor.pos;
+
+      // Clear saved position after use
+      savedCursorPositionRef.current = null;
+
       // Insert different types of media based on their type
       switch (media.media_type) {
         case 'audio':
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any)
-            .setAudio({
-              src: media.url,
-              title: media.original_name,
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(position, {
+              type: 'audio',
+              attrs: {
+                src: media.url,
+                title: media.original_name,
+              },
             })
             .run();
           break;
@@ -309,29 +320,40 @@ export default function Editor({
           editor
             .chain()
             .focus()
-            .setImage({
-              src: media.url,
-              alt: media.alt_text || media.original_name,
-              title: media.original_name,
+            .insertContentAt(position, {
+              type: 'customImage',
+              attrs: {
+                src: media.url,
+                alt: media.alt_text || media.original_name,
+                title: media.original_name,
+              },
             })
             .run();
           break;
         case 'video':
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any)
-            .setVideo({
-              src: media.url,
-              title: media.original_name,
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(position, {
+              type: 'video',
+              attrs: {
+                src: media.url,
+                title: media.original_name,
+              },
             })
             .run();
           break;
         case 'document':
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (editor.chain().focus() as any)
-            .setDocument({
-              src: media.url,
-              title: media.original_name,
-              fileType: media.original_name?.split('.').pop()?.toUpperCase(),
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(position, {
+              type: 'customDocument',
+              attrs: {
+                src: media.url,
+                title: media.original_name,
+                fileType: media.original_name?.split('.').pop()?.toUpperCase(),
+              },
             })
             .run();
           break;
@@ -669,7 +691,12 @@ export default function Editor({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setIsMediaLibraryOpen(true)}
+          onClick={() => {
+            if (editor) {
+              savedCursorPositionRef.current = editor.state.selection.$anchor.pos;
+            }
+            setIsMediaLibraryOpen(true);
+          }}
         >
           <Music className="h-4 w-4 mr-2" />
           Media

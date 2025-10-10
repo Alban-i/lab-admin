@@ -23,7 +23,15 @@ const VideoNodeView = ({
     const video = videoRef.current;
 
     const handleLoadedMetadata = () => {
-      setDuration(video.duration);
+      if (isFinite(video.duration) && video.duration > 0) {
+        setDuration(video.duration);
+      }
+    };
+
+    const handleDurationChange = () => {
+      if (isFinite(video.duration) && video.duration > 0) {
+        setDuration(video.duration);
+      }
     };
 
     const handleTimeUpdate = () => {
@@ -35,6 +43,7 @@ const VideoNodeView = ({
     const handleEnded = () => setPlaying(false);
 
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('durationchange', handleDurationChange);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
@@ -42,12 +51,13 @@ const VideoNodeView = ({
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [node.attrs.src]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.preventDefault();
