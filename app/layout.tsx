@@ -17,6 +17,12 @@ import { ReactQueryClientProvider } from '@/providers/react-query-client-provide
 import { ThemeProvider } from '@/providers/theme-providers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
+/**
+ * @description Layout for the entire application
+ * @param children - The children components
+ * @returns The layout component
+ */
+
 const fira_font = Fira_Sans_Condensed({
   weight: ['300', '400', '500', '600', '700', '800'],
   style: ['normal'],
