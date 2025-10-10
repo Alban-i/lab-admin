@@ -69,11 +69,17 @@ export const CustomDocumentExtension = TipTapNode.create<DocumentOptions>({
     return {
       setDocument:
         (options: { src?: string; title?: string; fileType?: string; fileSize?: string }) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          });
+        ({ chain, state }: CommandProps) => {
+          const { selection } = state;
+          const position = selection.$anchor.pos;
+
+          return chain()
+            .focus()
+            .insertContentAt(position, {
+              type: this.name,
+              attrs: options,
+            })
+            .run();
         },
       deleteDocument:
         () =>

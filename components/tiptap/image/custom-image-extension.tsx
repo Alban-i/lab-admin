@@ -103,11 +103,17 @@ const CustomImageExtension = Image.extend({
     return {
       setImage:
         (options: ImageAttributes) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          });
+        ({ chain, state }: CommandProps) => {
+          const { selection } = state;
+          const position = selection.$anchor.pos;
+
+          return chain()
+            .focus()
+            .insertContentAt(position, {
+              type: this.name,
+              attrs: options,
+            })
+            .run();
         },
       deleteImage:
         () =>

@@ -49,11 +49,17 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
     return {
       setAudio:
         (options: { src?: string; title?: string }) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          });
+        ({ chain, state }: CommandProps) => {
+          const { selection } = state;
+          const position = selection.$anchor.pos;
+
+          return chain()
+            .focus()
+            .insertContentAt(position, {
+              type: this.name,
+              attrs: options,
+            })
+            .run();
         },
       deleteAudio:
         () =>

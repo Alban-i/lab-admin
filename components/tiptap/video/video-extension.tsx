@@ -53,11 +53,17 @@ export const CustomVideoExtension = TipTapNode.create<VideoOptions>({
     return {
       setVideo:
         (options: { src?: string; title?: string; poster?: string }) =>
-        ({ commands }: CommandProps) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          });
+        ({ chain, state }: CommandProps) => {
+          const { selection } = state;
+          const position = selection.$anchor.pos;
+
+          return chain()
+            .focus()
+            .insertContentAt(position, {
+              type: this.name,
+              attrs: options,
+            })
+            .run();
         },
       deleteVideo:
         () =>
