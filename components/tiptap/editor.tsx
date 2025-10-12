@@ -225,7 +225,7 @@ export default function Editor({
         }
       },
     },
-  });
+  }, []); // Empty dependency array prevents editor from being recreated
 
   useEffect(() => {
     setIsMounted(true);

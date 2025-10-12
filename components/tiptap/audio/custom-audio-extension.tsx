@@ -27,20 +27,6 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
     return {
       src: { default: null },
       title: { default: null },
-      id: {
-        default: null,
-        parseHTML: (element) => element.getAttribute('data-id'),
-        renderHTML: (attributes) => {
-          if (!attributes.id) {
-            return {
-              'data-id': `audio-${Math.random().toString(36).substr(2, 9)}`,
-            };
-          }
-          return {
-            'data-id': attributes.id,
-          };
-        },
-      },
     };
   },
 
@@ -49,13 +35,10 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
-    // Generate unique ID if not present to help ProseMirror track this node
-    const id = node.attrs.id || `audio-${Math.random().toString(36).substr(2, 9)}`;
     return [
       'audio',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-audio': true,
-        'data-id': id,
         src: node.attrs.src,
         title: node.attrs.title,
       }),
