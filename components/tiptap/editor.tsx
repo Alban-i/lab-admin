@@ -89,18 +89,12 @@ interface UploadResult {
     | string;
 }
 
-// Generate unique render ID for tracking
-let editorRenderCounter = 0;
-
 export default function Editor({
   content = '',
   onChange,
   articleId,
   onMediaAdded,
 }: EditorProps) {
-  const renderCount = ++editorRenderCounter;
-  console.log(`[EDITOR-${renderCount}] 🔄 Editor component rendering`);
-  console.trace(`[EDITOR-${renderCount}] 📍 Render call stack`);
 
   const [isMounted, setIsMounted] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -158,28 +152,13 @@ export default function Editor({
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
-    shouldRerenderOnTransaction: true, // Fix NodeView remounting in v3 (v3 default is false)
-    onTransaction: ({ transaction }) => {
-      console.log(`[EDITOR-${renderCount}] 🔷 TRANSACTION:`, {
-        docChanged: transaction.docChanged,
-        selectionSet: transaction.selectionSet,
-        steps: transaction.steps.length,
-      });
-      if (transaction.docChanged) {
-        console.log(`[EDITOR-${renderCount}] ⚠️ Document changed - this will trigger re-render`);
-      }
-    },
     onUpdate: ({ editor }) => {
-      console.log(`[EDITOR-${renderCount}] 🔶 ON_UPDATE callback`);
       const newContent = editor.getHTML();
       // Only notify parent if content structure actually changed
       // This prevents unnecessary re-renders from NodeView internal state updates
       if (lastContentRef.current !== newContent) {
-        console.log(`[EDITOR-${renderCount}] ⚠️ Content changed - calling onChange`);
         lastContentRef.current = newContent;
         onChange?.(newContent);
-      } else {
-        console.log(`[EDITOR-${renderCount}] ✅ Content unchanged - skipping onChange`);
       }
     },
     editorProps: {
@@ -257,12 +236,8 @@ export default function Editor({
   }, []); // Empty dependency array prevents editor from being recreated
 
   useEffect(() => {
-    console.log(`[EDITOR-${renderCount}] ✅ MOUNTED`);
     setIsMounted(true);
-    return () => {
-      console.log(`[EDITOR-${renderCount}] ❌ UNMOUNTED`);
-    };
-  }, [renderCount]);
+  }, []);
 
 
   const onImageUpload = useCallback(

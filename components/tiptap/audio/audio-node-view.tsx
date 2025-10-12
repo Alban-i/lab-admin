@@ -3,9 +3,6 @@ import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
-// Generate unique instance ID for tracking
-let instanceCounter = 0;
-
 const AudioNodeView = ({
   node,
   updateAttributes,
@@ -13,7 +10,6 @@ const AudioNodeView = ({
   selected,
   getPos,
 }: NodeViewProps) => {
-  const instanceId = useRef(`AudioNodeView-${++instanceCounter}`);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -29,37 +25,11 @@ const AudioNodeView = ({
   const durationSetRef = useRef(false);
   const initializedRef = useRef(false);
 
-  // Track previous props for comparison
-  const prevPropsRef = useRef({
-    src: node.attrs.src,
-    title: node.attrs.title,
-    selected
-  });
-
-  // Log prop changes on every render
-  if (prevPropsRef.current.src !== node.attrs.src ||
-      prevPropsRef.current.title !== node.attrs.title ||
-      prevPropsRef.current.selected !== selected) {
-    console.log(`[${instanceId.current}] 🔄 PROPS CHANGED:`, {
-      srcChanged: prevPropsRef.current.src !== node.attrs.src,
-      titleChanged: prevPropsRef.current.title !== node.attrs.title,
-      selectedChanged: prevPropsRef.current.selected !== selected,
-      oldSrc: prevPropsRef.current.src,
-      newSrc: node.attrs.src,
-      oldSelected: prevPropsRef.current.selected,
-      newSelected: selected,
-    });
-    prevPropsRef.current = { src: node.attrs.src, title: node.attrs.title, selected };
-  }
-
   useEffect(() => {
     if (!audioRef.current) return;
 
-    // Only log and validate on first mount
+    // Only validate on first mount
     if (!initializedRef.current) {
-      console.log(`[${instanceId.current}] ✅ MOUNTED with src:`, node.attrs.src);
-      console.log(`[${instanceId.current}] Audio title:`, node.attrs.title);
-      console.trace(`[${instanceId.current}] 📍 Mount call stack`);
 
       if (!node.attrs.src) {
         console.error('[AudioNodeView] No audio source provided!');
@@ -171,11 +141,7 @@ const AudioNodeView = ({
     };
 
     const handleLoadStart = () => {
-      console.log(`[${instanceId.current}] 🔵 Audio loadstart event`);
-      console.trace(`[${instanceId.current}] 📍 Loadstart call stack`);
-      console.log(`[${instanceId.current}] ⚠️ About to call setLoading(true)`);
       setLoading(true);
-      console.log(`[${instanceId.current}] ✅ setLoading(true) completed`);
     };
 
     const handleCanPlay = () => {
@@ -194,8 +160,6 @@ const AudioNodeView = ({
     audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
-      console.log(`[${instanceId.current}] ❌ UNMOUNTING - Cleaning up event listeners`);
-      console.trace(`[${instanceId.current}] 📍 Unmount call stack`);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -205,7 +169,6 @@ const AudioNodeView = ({
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
-      console.log(`[${instanceId.current}] ✅ Cleanup completed`);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
