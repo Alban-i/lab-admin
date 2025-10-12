@@ -1,7 +1,6 @@
 import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
 import { Node } from '@tiptap/pm/model';
-import { ReactNodeViewRenderer } from '@tiptap/react';
-import AudioNodeView from './audio-node-view';
+import { AudioNodeView } from './audio-node-view-vanilla';
 
 export interface AudioOptions {
   inline: boolean;
@@ -70,6 +69,8 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView);
+    return ((node: any, view: any, getPos: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      return new AudioNodeView(node, view, getPos as () => number);
+    }) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   },
 });
