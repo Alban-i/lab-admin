@@ -150,6 +150,7 @@ export default function Editor({
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
+    shouldRerenderOnTransaction: false, // Prevent editor from recreating on every content change
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
