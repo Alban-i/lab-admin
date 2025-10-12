@@ -153,6 +153,7 @@ export default function Editor({
     ],
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
+    shouldRerenderOnTransaction: true, // Fix NodeView remounting in v3 (v3 default is false)
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
       // Only notify parent if content structure actually changed
