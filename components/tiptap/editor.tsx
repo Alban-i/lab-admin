@@ -9,6 +9,7 @@ import Typography from '@tiptap/extension-typography';
 import { EditorView } from '@tiptap/pm/view';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { memo } from 'react';
 import { AutoTextDirectionExtension } from './text-direction/auto-text-direction-extension';
 import { FootnotesV2Extension } from './footnotes-v2/footnotes-v2-extension-new';
 import { FootnoteV2Extension } from './footnotes-v2/footnote-v2-extension-new';
@@ -89,7 +90,7 @@ interface UploadResult {
     | string;
 }
 
-export default function Editor({
+function Editor({
   content = '',
   onChange,
   articleId,
@@ -890,3 +891,15 @@ export default function Editor({
     </div>
   );
 }
+
+// Memoize to prevent re-renders when parent state changes
+// This stops TipTap from remounting NodeViews
+export default memo(Editor, (prevProps, nextProps) => {
+  // Only re-render if articleId or onMediaAdded changes
+  // Don't re-render when content changes (managed by editor internally via onUpdate)
+  return (
+    prevProps.articleId === nextProps.articleId &&
+    prevProps.onMediaAdded === nextProps.onMediaAdded &&
+    prevProps.onChange === nextProps.onChange
+  );
+});
