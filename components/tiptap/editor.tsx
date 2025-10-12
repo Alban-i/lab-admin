@@ -146,7 +146,7 @@ export default function Editor({
       QuoteWithTranslationExtension,
       GlossaryTermExtension,
     ],
-    content,
+    content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
