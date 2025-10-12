@@ -1,5 +1,5 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
@@ -426,12 +426,4 @@ const AudioNodeView = ({
   );
 };
 
-// Memoize to prevent unnecessary re-renders from parent updates
-// Only re-render when node attributes (src, title) or selection state changes
-export default React.memo(AudioNodeView, (prevProps, nextProps) => {
-  return (
-    prevProps.node.attrs.src === nextProps.node.attrs.src &&
-    prevProps.node.attrs.title === nextProps.node.attrs.title &&
-    prevProps.selected === nextProps.selected
-  );
-});
+export default AudioNodeView;

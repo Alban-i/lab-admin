@@ -2,6 +2,7 @@ import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core'
 import { Node } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import AudioNodeView from './audio-node-view';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface AudioOptions {
   inline: boolean;
@@ -27,6 +28,13 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
     return {
       src: { default: null },
       title: { default: null },
+      uuid: {
+        default: null,
+        parseHTML: () => {
+          return uuidv4();
+        },
+        rendered: false,
+      },
     };
   },
 
@@ -57,7 +65,10 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
             .focus()
             .insertContentAt(position, {
               type: this.name,
-              attrs: options,
+              attrs: {
+                ...options,
+                uuid: uuidv4(),
+              },
             })
             .run();
         },
