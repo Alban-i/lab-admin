@@ -72,7 +72,7 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   addNodeView() {
     return ReactNodeViewRenderer(AudioNodeView, {
       // Prevent TipTap from destroying the node view when audio element's internal state changes
-      ignoreMutation: (mutation) => {
+      ignoreMutation: ({ mutation }) => {
         // Ignore mutations to the audio element itself (loading, time updates, playing state, etc.)
         if (mutation.target.nodeName === 'AUDIO') {
           return true;
