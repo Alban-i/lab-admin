@@ -73,7 +73,6 @@ import { addArticleMedia } from '@/actions/media/add-article-media';
 import { toast } from 'sonner';
 import { GlossaryTermExtension } from './glossary/glossary-term-extension';
 import { GlossarySelectorDialog } from './glossary/glossary-selector-dialog';
-import { v4 as uuidv4 } from 'uuid';
 
 interface EditorProps {
   content?: string;
@@ -328,7 +327,6 @@ export default function Editor({
               attrs: {
                 src: media.url,
                 title: media.original_name,
-                uuid: uuidv4(),
               },
             })
             .run();
