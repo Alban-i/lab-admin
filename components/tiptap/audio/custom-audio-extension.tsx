@@ -81,6 +81,24 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView);
+    return ReactNodeViewRenderer(AudioNodeView, {
+      stopEvent: ({ event }) => {
+        // Allow drag events to bubble for drag-and-drop functionality
+        if (event.type === 'dragstart' || event.type === 'drop' || event.type === 'dragend') {
+          return false;
+        }
+        // Stop all other events from propagating to ProseMirror
+        return true;
+      },
+      ignoreMutation: ({ mutation }) => {
+        // Don't ignore selection mutations - let ProseMirror handle them
+        if (mutation.type === 'selection') {
+          return false;
+        }
+        // Ignore all other mutations (attributes, childList, characterData)
+        // This prevents ProseMirror from re-rendering when audio state changes internally
+        return true;
+      },
+    });
   },
 });
