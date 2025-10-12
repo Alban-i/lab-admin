@@ -95,6 +95,8 @@ export default function Editor({
   articleId,
   onMediaAdded,
 }: EditorProps) {
+  console.log('[EDITOR] Editor component rendering');
+
   const [isMounted, setIsMounted] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
@@ -228,7 +230,11 @@ export default function Editor({
   }, []); // Empty dependency array prevents editor from being recreated
 
   useEffect(() => {
+    console.log('[EDITOR] Editor component MOUNTED');
     setIsMounted(true);
+    return () => {
+      console.log('[EDITOR] Editor component UNMOUNTED');
+    };
   }, []);
 
 
