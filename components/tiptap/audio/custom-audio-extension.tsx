@@ -1,6 +1,7 @@
 import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
 import { Node } from '@tiptap/pm/model';
-import { AudioNodeView } from './audio-node-view-vanilla';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import AudioNodeView from './audio-node-view';
 
 export interface AudioOptions {
   inline: boolean;
@@ -30,7 +31,18 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'audio[data-audio]' }];
+    return [
+      {
+        tag: 'audio[data-audio]',
+        getAttrs: (dom) => {
+          const element = dom as HTMLElement;
+          return {
+            src: element.getAttribute('src'),
+            title: element.getAttribute('title'),
+          };
+        },
+      },
+    ];
   },
 
   renderHTML({ node, HTMLAttributes }: { node: Node; HTMLAttributes: Record<string, unknown> }) {
@@ -69,8 +81,6 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
   },
 
   addNodeView() {
-    return ((node: any, view: any, getPos: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-      return new AudioNodeView(node, view, getPos as () => number);
-    }) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    return ReactNodeViewRenderer(AudioNodeView);
   },
 });
