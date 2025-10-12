@@ -24,8 +24,14 @@ const AudioNodeView = ({
   const [loading, setLoading] = useState(true);
   const durationSetRef = useRef(false);
   const initializedRef = useRef(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     if (!audioRef.current) return;
 
     // Only log and validate on first mount
@@ -175,7 +181,7 @@ const AudioNodeView = ({
       audio.removeEventListener('canplay', handleCanPlay);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isMounted]);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
