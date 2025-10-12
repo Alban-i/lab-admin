@@ -16,6 +16,7 @@ import { FootnoteReferenceV2Extension } from './footnotes-v2/footnote-reference-
 import QuoteWithSourceExtension from './quote/quote-with-source-extension';
 
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import {
   Asterisk,
   Bold,
@@ -38,6 +39,7 @@ import {
   Split,
   Table as TableIcon,
   Trash2,
+  Twitter,
 } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -384,198 +386,218 @@ export default function Editor({
     <div className="w-full">
       {/* MENU BAR */}
       <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-muted rounded-lg">
-        {/* GROUP 1: HTML STYLING & FORMATTING */}
-        <Toggle
-          pressed={editor.isActive('bold')}
-          onPressedChange={() => editor.chain().focus().toggleBold().run()}
-          size="sm"
-          variant="outline"
-          title="Bold (Ctrl+B)"
-        >
-          <Bold className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('italic')}
-          onPressedChange={() => editor.chain().focus().toggleItalic().run()}
-          size="sm"
-          variant="outline"
-          title="Italic (Ctrl+I)"
-        >
-          <Italic className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('heading', { level: 1 })}
-          onPressedChange={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-          size="sm"
-          variant="outline"
-          title="Heading 1"
-        >
-          <Heading1 className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('heading', { level: 2 })}
-          onPressedChange={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
-          size="sm"
-          variant="outline"
-          title="Heading 2"
-        >
-          <Heading2 className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('heading', { level: 3 })}
-          onPressedChange={() =>
-            editor.chain().focus().toggleHeading({ level: 3 }).run()
-          }
-          size="sm"
-          variant="outline"
-          title="Heading 3"
-        >
-          <Heading3 className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('bulletList')}
-          onPressedChange={() =>
-            editor.chain().focus().toggleBulletList().run()
-          }
-          size="sm"
-          variant="outline"
-          title="Bullet List"
-        >
-          <List className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('orderedList')}
-          onPressedChange={() =>
-            editor.chain().focus().toggleOrderedList().run()
-          }
-          size="sm"
-          variant="outline"
-          title="Ordered List"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('codeBlock')}
-          onPressedChange={() => editor.chain().focus().toggleCodeBlock().run()}
-          size="sm"
-          variant="outline"
-          title="Code Block"
-        >
-          <Code className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('link')}
-          onPressedChange={() => {
-            const url = window.prompt('URL');
-            if (url) {
-              editor.chain().focus().setLink({ href: url }).run();
+        {/* GROUP 1: Bold & Italic */}
+        <ButtonGroup>
+          <Toggle
+            pressed={editor.isActive('bold')}
+            onPressedChange={() => editor.chain().focus().toggleBold().run()}
+            size="sm"
+            variant="outline"
+            title="Bold (Ctrl+B)"
+          >
+            <Bold className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('italic')}
+            onPressedChange={() => editor.chain().focus().toggleItalic().run()}
+            size="sm"
+            variant="outline"
+            title="Italic (Ctrl+I)"
+          >
+            <Italic className="h-4 w-4" />
+          </Toggle>
+        </ButtonGroup>
+
+        {/* GROUP 2: Headings */}
+        <ButtonGroup>
+          <Toggle
+            pressed={editor.isActive('heading', { level: 1 })}
+            onPressedChange={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
             }
-          }}
-          size="sm"
-          variant="outline"
-          title="Link"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('blockquote')}
-          onPressedChange={() =>
-            editor.chain().focus().toggleBlockquote().run()
-          }
-          size="sm"
-          variant="outline"
-          title="Quote"
-        >
-          <Quote className="h-4 w-4" />
-        </Toggle>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (!editor) return;
-            editor
-              .chain()
-              .focus()
-              .insertContent({
-                type: 'quoteWithSource',
-                attrs: { sourceLabel: '', sourceUrl: '' },
-                content: [
-                  {
-                    type: 'paragraph',
-                    // content: [{ type: 'text', text: 'Type your quote...' }],
-                  },
-                ],
-              })
-              .run();
-            editor.commands.focus();
-          }}
-          title="Quote with Source"
-        >
-          <Quote className="h-4 w-4 mr-2" />
-          Quote + Source
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (!editor) return;
-            editor
-              .chain()
-              .focus()
-              .insertContent({
-                type: 'quoteWithTranslation',
-                attrs: {
-                  original: '',
-                  translation: '',
-                  sourceLabel: '',
-                  sourceUrl: '',
-                  autoOpen: true,
-                },
-              })
-              .run();
-            editor.commands.focus();
-          }}
-          title="Quote with Translation"
-        >
-          <span className="h-4 w-4 mr-2 font-bold">Q</span>
-          Quote + Translation
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            insertLayout();
-          }}
-          title="Insert Layout"
-        >
-          <Layout className="h-4 w-4 mr-2" />
-          Layout
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={insertFootnoteV2}
-          title="Insert Footnote"
-        >
-          <Asterisk className="h-4 w-4 mr-2" />
-          Footnote
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <TableIcon className="h-4 w-4 mr-2" />
-              Table
-            </Button>
-          </DropdownMenuTrigger>
+            size="sm"
+            variant="outline"
+            title="Heading 1"
+          >
+            <Heading1 className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('heading', { level: 2 })}
+            onPressedChange={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
+            size="sm"
+            variant="outline"
+            title="Heading 2"
+          >
+            <Heading2 className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('heading', { level: 3 })}
+            onPressedChange={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+            size="sm"
+            variant="outline"
+            title="Heading 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </Toggle>
+        </ButtonGroup>
+
+        {/* GROUP 3: Lists */}
+        <ButtonGroup>
+          <Toggle
+            pressed={editor.isActive('bulletList')}
+            onPressedChange={() =>
+              editor.chain().focus().toggleBulletList().run()
+            }
+            size="sm"
+            variant="outline"
+            title="Bullet List"
+          >
+            <List className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('orderedList')}
+            onPressedChange={() =>
+              editor.chain().focus().toggleOrderedList().run()
+            }
+            size="sm"
+            variant="outline"
+            title="Ordered List"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Toggle>
+        </ButtonGroup>
+
+        {/* GROUP 4: Code, Link, Quote Dropdown */}
+        <ButtonGroup>
+          <Toggle
+            pressed={editor.isActive('codeBlock')}
+            onPressedChange={() => editor.chain().focus().toggleCodeBlock().run()}
+            size="sm"
+            variant="outline"
+            title="Code Block"
+          >
+            <Code className="h-4 w-4" />
+          </Toggle>
+          <Toggle
+            pressed={editor.isActive('link')}
+            onPressedChange={() => {
+              const url = window.prompt('URL');
+              if (url) {
+                editor.chain().focus().setLink({ href: url }).run();
+              }
+            }}
+            size="sm"
+            variant="outline"
+            title="Link"
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Toggle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-transparent border-input h-8 w-8"
+                title="Quote"
+              >
+                <Quote className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel>Quote Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  editor.chain().focus().toggleBlockquote().run();
+                }}
+              >
+                <Quote className="mr-2 h-4 w-4" />
+                <span>Regular Quote</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!editor) return;
+                  editor
+                    .chain()
+                    .focus()
+                    .insertContent({
+                      type: 'quoteWithSource',
+                      attrs: { sourceLabel: '', sourceUrl: '' },
+                      content: [
+                        {
+                          type: 'paragraph',
+                        },
+                      ],
+                    })
+                    .run();
+                  editor.commands.focus();
+                }}
+              >
+                <Quote className="mr-2 h-4 w-4" />
+                <span>Quote + Source</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!editor) return;
+                  editor
+                    .chain()
+                    .focus()
+                    .insertContent({
+                      type: 'quoteWithTranslation',
+                      attrs: {
+                        original: '',
+                        translation: '',
+                        sourceLabel: '',
+                        sourceUrl: '',
+                        autoOpen: true,
+                      },
+                    })
+                    .run();
+                  editor.commands.focus();
+                }}
+              >
+                <span className="mr-2 h-4 w-4 font-bold flex items-center justify-center">Q</span>
+                <span>Quote + Translation</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ButtonGroup>
+
+        {/* GROUP 7: Layout, Footnote, Table */}
+        <ButtonGroup>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="bg-transparent border-input"
+            onClick={(e) => {
+              e.preventDefault();
+              insertLayout();
+            }}
+            title="Insert Layout"
+          >
+            <Layout className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="bg-transparent border-input"
+            onClick={insertFootnoteV2}
+            title="Insert Footnote"
+          >
+            <Asterisk className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="bg-transparent border-input" title="Table">
+                <TableIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>Table Operations</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -664,81 +686,96 @@ export default function Editor({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </ButtonGroup>
 
         {/* SEPARATOR 1 */}
         <Separator className="h-6" />
 
-        {/* GROUP 2: MEDIA MANAGEMENT */}
-        <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
-          {({ open }) => {
-            const onClick = () => {
-              open();
-            };
-            return (
+        {/* GROUP 6: MEDIA MANAGEMENT */}
+        <ButtonGroup>
+          <CldUploadWidget onSuccess={onImageUpload} uploadPreset="markazshaafii">
+            {({ open }) => {
+              const onClick = () => {
+                open();
+              };
+              return (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClick}
+                  size="sm"
+                  className="bg-transparent border-input"
+                >
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  Image (Cloud)
+                </Button>
+              );
+            }}
+          </CldUploadWidget>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-transparent border-input"
+            onClick={() => {
+              if (editor) {
+                savedCursorPositionRef.current = editor.state.selection.$anchor.pos;
+              }
+              setIsMediaLibraryOpen(true);
+            }}
+          >
+            <Music className="h-4 w-4 mr-2" />
+            Media
+          </Button>
+        </ButtonGroup>
+
+        {/* GROUP 8: Post & Glossary */}
+        <ButtonGroup>
+          <DynamicPostSelectorDialog
+            onSelect={(postId) => {
+              if (editor) {
+                editor
+                  .chain()
+                  .focus()
+                  .insertContent({
+                    type: 'dynamicPostReference',
+                    attrs: {
+                      postId,
+                    },
+                  })
+                  .run();
+              }
+            }}
+            triggerButton={
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClick}
                 size="sm"
+                className="bg-transparent border-input"
+                title="Post"
               >
-                <ImagePlus className="h-4 w-4 mr-2" />
-                Image (Cloud)
+                <Twitter className="h-4 w-4 mr-2" />
+                Post
               </Button>
-            );
-          }}
-        </CldUploadWidget>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (editor) {
-              savedCursorPositionRef.current = editor.state.selection.$anchor.pos;
             }
-            setIsMediaLibraryOpen(true);
-          }}
-        >
-          <Music className="h-4 w-4 mr-2" />
-          Media
-        </Button>
-
-        {/* SEPARATOR 2 */}
-        <Separator className="h-6" />
-
-        {/* GROUP 3: POST REFERENCES */}
-        <DynamicPostSelectorDialog
-          onSelect={(postId) => {
-            if (editor) {
-              editor
-                .chain()
-                .focus()
-                .insertContent({
-                  type: 'dynamicPostReference',
-                  attrs: {
-                    postId,
-                  },
-                })
-                .run();
-            }
-          }}
-        />
-
-        {/* GLOSSARY TERMS */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const { from, to } = editor.state.selection;
-            const text = editor.state.doc.textBetween(from, to);
-            setSelectedText(text);
-            setIsGlossarySelectorOpen(true);
-          }}
-          title="Add Glossary Term"
-        >
-          <BookOpen className="h-4 w-4 mr-2" />
-          Glossary
-        </Button>
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="bg-transparent border-input"
+            onClick={() => {
+              const { from, to } = editor.state.selection;
+              const text = editor.state.doc.textBetween(from, to);
+              setSelectedText(text);
+              setIsGlossarySelectorOpen(true);
+            }}
+            title="Add Glossary Term"
+          >
+            <BookOpen className="h-4 w-4 mr-2" />
+            Glossary
+          </Button>
+        </ButtonGroup>
       </div>
 
       {/* ERROR MESSAGE */}

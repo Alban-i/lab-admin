@@ -26,10 +26,12 @@ interface Post {
 
 interface DynamicPostSelectorDialogProps {
   onSelect: (postId: string) => void;
+  triggerButton?: React.ReactNode;
 }
 
 export function DynamicPostSelectorDialog({
   onSelect,
+  triggerButton,
 }: DynamicPostSelectorDialogProps) {
   const [open, setOpen] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -60,9 +62,11 @@ export function DynamicPostSelectorDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Dynamic Post Reference
-        </Button>
+        {triggerButton || (
+          <Button variant="outline" size="sm">
+            Dynamic Post Reference
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
