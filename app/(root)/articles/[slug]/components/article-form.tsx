@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import dynamic from 'next/dynamic';
 import {
   Articles,
   ProfilesWithRoles,
@@ -38,13 +39,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
-import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import { Wand2 } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
 import { RevalidateButton } from '@/components/revalidate-button';
 import { UsedMediaCard } from '@/components/media/used-media-card';
+
+// Dynamically import Editor with SSR disabled to prevent Vercel hydration issues
+const Editor = dynamic(() => import('@/components/tiptap/editor'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-muted-foreground">Loading editor...</div>
+});
 
 const initialData = {
   title: '',
