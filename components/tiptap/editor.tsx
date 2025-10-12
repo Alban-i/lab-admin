@@ -103,6 +103,7 @@ export default function Editor({
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const savedCursorPositionRef = useRef<number | null>(null);
+  const lastContentRef = useRef<string>(content);
 
   const editor = useEditor({
     extensions: [
@@ -153,7 +154,13 @@ export default function Editor({
     content: content || '<p></p>',
     immediatelyRender: false, // Fix SSR hydration mismatch in TipTap v3
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML());
+      const newContent = editor.getHTML();
+      // Only notify parent if content structure actually changed
+      // This prevents unnecessary re-renders from NodeView internal state updates
+      if (lastContentRef.current !== newContent) {
+        lastContentRef.current = newContent;
+        onChange?.(newContent);
+      }
     },
     editorProps: {
       attributes: {
