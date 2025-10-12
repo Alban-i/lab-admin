@@ -41,6 +41,7 @@ import { NavMain } from '@/components/layout/nav-main';
 import { NavProjects } from '@/components/layout/nav-projects';
 import { NavSecondary } from '@/components/layout/nav-secondary';
 import { NavUser } from '@/components/layout/nav-user';
+import { SidebarVersion } from '@/components/layout/sidebar-version';
 import {
   Sidebar,
   SidebarContent,
@@ -206,6 +207,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={navMainData} />
         <NavProjects projects={projectsData} />
+        <SidebarVersion />
         <NavSecondary items={navSecondaryData} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
