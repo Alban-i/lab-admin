@@ -293,7 +293,7 @@ const AudioNodeView = ({
           title={node.attrs.title || ''}
           draggable={false}
           className="w-full"
-          preload="metadata"
+          preload="none"
           crossOrigin="anonymous"
         />
         {selected && (
