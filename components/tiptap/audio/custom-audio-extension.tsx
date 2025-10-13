@@ -1,4 +1,4 @@
-import { Node as TipTapNode, mergeAttributes, CommandProps } from '@tiptap/core';
+import { Node as TipTapNode, mergeAttributes } from '@tiptap/core';
 import { Node } from '@tiptap/pm/model';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import AudioNodeView from './audio-node-view';
@@ -56,29 +56,6 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
     ];
   },
 
-  addCommands() {
-    return {
-      setAudio:
-        (options: { src?: string; title?: string }) =>
-        ({ chain, state }: CommandProps) => {
-          const { selection } = state;
-          const position = selection.$anchor.pos;
-
-          return chain()
-            .focus()
-            .insertContentAt(position, {
-              type: this.name,
-              attrs: options,
-            })
-            .run();
-        },
-      deleteAudio:
-        () =>
-        ({ commands }: CommandProps) => {
-          return commands.deleteSelection();
-        },
-    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  },
 
   addNodeView() {
     return ReactNodeViewRenderer(AudioNodeView);

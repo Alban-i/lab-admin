@@ -1,6 +1,15 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Play, Pause, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 const AudioNodeView = ({
@@ -22,6 +31,8 @@ const AudioNodeView = ({
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
   const durationSetRef = useRef(false);
   const initializedRef = useRef(false);
 
@@ -30,31 +41,19 @@ const AudioNodeView = ({
 
     // Only validate on first mount
     if (!initializedRef.current) {
-
       if (!node.attrs.src) {
-        console.error('[AudioNodeView] No audio source provided!');
         setError('No audio source provided');
         setLoading(false);
         return;
       }
-
       initializedRef.current = true;
     }
 
     const audio = audioRef.current;
-    console.log('[AudioNodeView] Setting up event listeners');
-    console.log('[AudioNodeView] Initial readyState:', audio.readyState);
-    console.log('[AudioNodeView] Initial networkState:', audio.networkState);
 
     const handleLoadedMetadata = () => {
-      console.log('[AudioNodeView] loadedmetadata event fired');
-      console.log('[AudioNodeView] Audio duration:', audio.duration);
-      console.log('[AudioNodeView] Duration is finite:', isFinite(audio.duration));
-      console.log('[AudioNodeView] Duration set ref:', durationSetRef.current);
-
       if (isFinite(audio.duration) && audio.duration > 0) {
         if (!durationSetRef.current) {
-          console.log('[AudioNodeView] Setting duration to:', audio.duration);
           setDuration(audio.duration);
           durationSetRef.current = true;
         }
@@ -66,7 +65,6 @@ const AudioNodeView = ({
       if ('mediaSession' in navigator) {
         const mediaMetadata = navigator.mediaSession.metadata;
         if (mediaMetadata) {
-          console.log('[AudioNodeView] Media metadata found:', mediaMetadata);
           setMetadata({
             title: mediaMetadata.title || node.attrs.title,
             artist: mediaMetadata.artist,
@@ -77,14 +75,9 @@ const AudioNodeView = ({
     };
 
     const handleDurationChange = () => {
-      console.log('[AudioNodeView] durationchange event fired');
-      console.log('[AudioNodeView] Current duration:', audio.duration);
-      console.log('[AudioNodeView] Duration already set:', durationSetRef.current);
-
       // Only update duration if we haven't set it yet and it's valid
       if (isFinite(audio.duration) && audio.duration > 0) {
         if (!durationSetRef.current) {
-          console.log('[AudioNodeView] Updating duration to:', audio.duration);
           setDuration(audio.duration);
           durationSetRef.current = true;
         }
@@ -98,27 +91,18 @@ const AudioNodeView = ({
     };
 
     const handlePlay = () => {
-      console.log('[AudioNodeView] Audio started playing');
       setPlaying(true);
     };
 
     const handlePause = () => {
-      console.log('[AudioNodeView] Audio paused');
       setPlaying(false);
     };
 
     const handleEnded = () => {
-      console.log('[AudioNodeView] Audio playback ended');
       setPlaying(false);
     };
 
-    const handleError = (e: Event) => {
-      console.error('[AudioNodeView] Audio error event:', e);
-      console.error('[AudioNodeView] Audio error code:', audio.error?.code);
-      console.error('[AudioNodeView] Audio error message:', audio.error?.message);
-      console.error('[AudioNodeView] Network state:', audio.networkState);
-      console.error('[AudioNodeView] Ready state:', audio.readyState);
-
+    const handleError = () => {
       let errorMessage = 'Failed to load audio';
       if (audio.error) {
         switch (audio.error.code) {
@@ -145,7 +129,6 @@ const AudioNodeView = ({
     };
 
     const handleCanPlay = () => {
-      console.log('[AudioNodeView] Audio can play');
       setLoading(false);
     };
 
@@ -170,40 +153,25 @@ const AudioNodeView = ({
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Empty deps: Event listeners only need to be set up once on mount.
+    // The audio element's src is managed via the audio tag's src attribute (line ~280),
+    // and event handlers use refs/setState which don't require re-setup on prop changes.
   }, []);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!audioRef.current) {
-      console.warn('[AudioNodeView] togglePlay called but audioRef is null');
-      return;
-    }
+    if (!audioRef.current) return;
 
     const audio = audioRef.current;
-    console.log('[AudioNodeView] togglePlay called, current playing state:', playing);
-    console.log('[AudioNodeView] Audio ready state:', audio.readyState);
-    console.log('[AudioNodeView] Audio network state:', audio.networkState);
-    console.log('[AudioNodeView] Audio paused:', audio.paused);
 
     try {
       if (playing) {
-        console.log('[AudioNodeView] Attempting to pause audio');
         audio.pause();
       } else {
-        console.log('[AudioNodeView] Attempting to play audio');
         await audio.play();
-        console.log('[AudioNodeView] Play promise resolved successfully');
       }
     } catch (error) {
-      console.error('[AudioNodeView] Audio playback error:', error);
-      console.error('[AudioNodeView] Error details:', {
-        name: (error as Error).name,
-        message: (error as Error).message,
-        readyState: audio.readyState,
-        networkState: audio.networkState,
-      });
       setError('Failed to play audio: ' + (error as Error).message);
       setPlaying(false);
     }
@@ -212,17 +180,11 @@ const AudioNodeView = ({
   const skip = (e: React.MouseEvent, delta: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!audioRef.current) {
-      console.warn('[AudioNodeView] skip called but audioRef is null');
-      return;
-    }
-    if (!isFinite(duration) || duration <= 0) {
-      console.warn('[AudioNodeView] skip called but duration is invalid:', duration);
-      return;
-    }
+    if (!audioRef.current) return;
+    if (!isFinite(duration) || duration <= 0) return;
+
     const audio = audioRef.current;
     const newTime = Math.max(0, Math.min(duration, audio.currentTime + delta));
-    console.log('[AudioNodeView] Skipping from', audio.currentTime, 'to', newTime, 'delta:', delta);
     audio.currentTime = newTime;
   };
 
@@ -236,18 +198,12 @@ const AudioNodeView = ({
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current) {
-      console.warn('[AudioNodeView] handleProgressClick called but audioRef is null');
-      return;
-    }
-    if (!isFinite(duration) || duration <= 0) {
-      console.warn('[AudioNodeView] handleProgressClick called but duration is invalid:', duration);
-      return;
-    }
+    if (!audioRef.current) return;
+    if (!isFinite(duration) || duration <= 0) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     const newTime = pos * duration;
-    console.log('[AudioNodeView] Progress bar clicked, seeking to:', newTime, 'position:', pos);
     audioRef.current.currentTime = newTime;
   };
 
@@ -289,7 +245,7 @@ const AudioNodeView = ({
           title={node.attrs.title || ''}
           draggable={false}
           className="w-full"
-          preload="none"
+          preload="metadata"
           crossOrigin="anonymous"
         />
         {selected && (
@@ -303,13 +259,8 @@ const AudioNodeView = ({
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                const newTitle = window.prompt(
-                  'Enter title:',
-                  node.attrs.title
-                );
-                if (newTitle !== null) {
-                  updateAttributes({ title: newTitle });
-                }
+                setTitleInput(node.attrs.title || '');
+                setIsTitleDialogOpen(true);
               }}
               className="p-1 text-white text-xs font-semibold hover:bg-black/20 rounded cursor-pointer"
               title="Edit title"
@@ -329,18 +280,13 @@ const AudioNodeView = ({
             </button>
           </div>
         )}
-        <div className="p-4 bg-gray-50 rounded-md" contentEditable={false}>
+        <div className="p-4 bg-gray-50 rounded-md border border-primary" contentEditable={false}>
           <div className="space-y-2">
             {/* Error message */}
             {error && (
               <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
                 {error}
               </div>
-            )}
-
-            {/* Loading state */}
-            {loading && !error && (
-              <div className="text-sm text-gray-500">Loading audio...</div>
             )}
 
             {/* Title and metadata */}
@@ -418,6 +364,49 @@ const AudioNodeView = ({
           </div>
         </div>
       </div>
+
+      {/* Title Edit Dialog */}
+      <Dialog open={isTitleDialogOpen} onOpenChange={setIsTitleDialogOpen}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Edit Audio Title</DialogTitle>
+            <DialogDescription>
+              Enter a new title for this audio file.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              placeholder="Enter title..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  updateAttributes({ title: titleInput });
+                  setIsTitleDialogOpen(false);
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsTitleDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                updateAttributes({ title: titleInput });
+                setIsTitleDialogOpen(false);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </NodeViewWrapper>
   );
 };
