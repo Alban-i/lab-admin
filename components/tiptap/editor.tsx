@@ -124,7 +124,27 @@ export default function Editor({
       CustomVideoExtension,
       CustomDocumentExtension,
       UniqueID.configure({
-        types: ['audio', 'video', 'customImage', 'customDocument'],
+        types: [
+          // Text blocks (CRITICAL - these come before media)
+          'paragraph',
+          'heading',
+          'blockquote',
+          'codeBlock',
+          'listItem',
+          // Media blocks
+          'audio',
+          'video',
+          'customImage',
+          'customDocument',
+          // Layout blocks
+          'layout',
+          'layoutColumn',
+          // Other blocks
+          'table',
+          'tableRow',
+          'tableCell',
+          'tableHeader',
+        ],
         attributeName: 'id',
       }),
       CharacterCount,
