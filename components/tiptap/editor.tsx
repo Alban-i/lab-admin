@@ -6,6 +6,7 @@ import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import Typography from '@tiptap/extension-typography';
+import { UniqueID } from '@tiptap/extension-unique-id';
 import { EditorView } from '@tiptap/pm/view';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -122,6 +123,10 @@ export default function Editor({
       CustomAudioExtension,
       CustomVideoExtension,
       CustomDocumentExtension,
+      UniqueID.configure({
+        types: ['audio', 'video', 'customImage', 'customDocument'],
+        attributeName: 'id',
+      }),
       CharacterCount,
       Table.configure({
         resizable: true,
