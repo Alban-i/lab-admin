@@ -1,5 +1,5 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Play, Pause, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
-const AudioNodeView = ({
+const AudioNodeView = memo(({
   node,
   updateAttributes,
   deleteNode,
@@ -34,19 +34,21 @@ const AudioNodeView = ({
   const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const durationSetRef = useRef(false);
-  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (!audioRef.current) return;
 
-    // Only validate on first mount
-    if (!initializedRef.current) {
-      if (!node.attrs.src) {
-        setError('No audio source provided');
-        setLoading(false);
-        return;
-      }
-      initializedRef.current = true;
+    // Reset state when src changes
+    setError(null);
+    setPlaying(false);
+    setCurrentTime(0);
+    durationSetRef.current = false;
+
+    // Validate source
+    if (!node.attrs.src) {
+      setError('No audio source provided');
+      setLoading(false);
+      return;
     }
 
     const audio = audioRef.current;
@@ -143,6 +145,8 @@ const AudioNodeView = ({
     audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
+      // Cleanup: pause audio and remove all event listeners
+      audio.pause();
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -153,10 +157,9 @@ const AudioNodeView = ({
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
     };
-    // Empty deps: Event listeners only need to be set up once on mount.
-    // The audio element's src is managed via the audio tag's src attribute (line ~280),
-    // and event handlers use refs/setState which don't require re-setup on prop changes.
-  }, []);
+    // Title is only used in metadata display, doesn't need to trigger re-setup
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.attrs.src]);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -409,6 +412,16 @@ const AudioNodeView = ({
       </Dialog>
     </NodeViewWrapper>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  // Only re-render if node attributes or selection state actually changed
+  return (
+    prevProps.node.attrs.src === nextProps.node.attrs.src &&
+    prevProps.node.attrs.title === nextProps.node.attrs.title &&
+    prevProps.selected === nextProps.selected
+  );
+});
+
+AudioNodeView.displayName = 'AudioNodeView';
 
 export default AudioNodeView;

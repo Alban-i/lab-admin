@@ -27,6 +27,13 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
     return {
       src: { default: null },
       title: { default: null },
+      nodeId: {
+        default: null,
+        // Generate unique ID on parse to help ProseMirror track nodes correctly
+        // This prevents re-renders when content is added before the audio node
+        parseHTML: () => crypto.randomUUID(),
+        rendered: false,
+      },
     };
   },
 
@@ -58,6 +65,21 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
 
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView);
+    return ReactNodeViewRenderer(AudioNodeView, {
+      // Ignore mutations from the audio element's internal state changes
+      // to prevent unnecessary re-renders when audio is playing/paused or time updates
+      ignoreMutation: ({ mutation }) => {
+        // Ignore all mutations within the audio element
+        // This prevents re-renders when audio time updates, play/pause state changes
+        if (
+          mutation.type === 'attributes' ||
+          mutation.type === 'characterData' ||
+          mutation.type === 'childList'
+        ) {
+          return true;
+        }
+        return false;
+      },
+    });
   },
 });
