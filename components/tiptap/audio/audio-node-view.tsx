@@ -37,10 +37,20 @@ const AudioNodeView = ({
   const initializedRef = useRef(false);
   const renderCountRef = useRef(0);
   const mountTimeRef = useRef(Date.now());
+  const posRef = useRef<number | null>(null);
+
+  // Cache position to avoid calling getPos() during render
+  if (posRef.current === null) {
+    try {
+      posRef.current = getPos();
+    } catch (e) {
+      posRef.current = -1;
+    }
+  }
 
   // Track renders
   renderCountRef.current++;
-  console.log(`🎵 [AudioNodeView] Render #${renderCountRef.current} | Position: ${getPos()} | Playing: ${playing} | Src: ${node.attrs.src?.substring(0, 50)}...`);
+  console.log(`🎵 [AudioNodeView] Render #${renderCountRef.current} | Position: ${posRef.current} | Playing: ${playing} | Src: ${node.attrs.src?.substring(0, 50)}...`);
 
   useEffect(() => {
     console.log(`🔧 [AudioNodeView] useEffect triggered | Pos: ${getPos()}`);
@@ -309,7 +319,7 @@ const AudioNodeView = ({
             {/* Debug Info */}
             <div className="flex items-center gap-2 text-xs bg-yellow-100 p-2 rounded border border-yellow-300">
               <span className="font-semibold">🐛 Debug:</span>
-              <span>Pos: {getPos()}</span>
+              <span>Pos: {posRef.current}</span>
               <span>•</span>
               <span>Renders: {renderCountRef.current}</span>
               <span>•</span>
