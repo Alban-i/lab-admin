@@ -240,6 +240,7 @@ const AudioNodeView = ({
         className="relative"
       >
         <audio
+          key={node.attrs.src}
           ref={audioRef}
           src={node.attrs.src}
           title={node.attrs.title || ''}
