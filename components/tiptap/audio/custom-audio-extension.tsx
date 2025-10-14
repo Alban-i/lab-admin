@@ -58,8 +58,6 @@ export const CustomAudioExtension = TipTapNode.create<AudioOptions>({
 
 
   addNodeView() {
-    return ReactNodeViewRenderer(AudioNodeView, {
-      stopEvent: () => true, // Prevents audio events from bubbling to editor
-    });
+    return ReactNodeViewRenderer(AudioNodeView);
   },
 });

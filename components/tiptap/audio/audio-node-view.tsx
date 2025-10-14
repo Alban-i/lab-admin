@@ -1,5 +1,5 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { useRef, useState, useEffect, memo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,8 +19,7 @@ const AudioNodeView = ({
   selected,
   getPos,
 }: NodeViewProps) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContainerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -37,37 +36,25 @@ const AudioNodeView = ({
   const durationSetRef = useRef(false);
   const initializedRef = useRef(false);
 
-  // Create audio element imperatively (only once) to prevent React from recreating it
   useEffect(() => {
-    if (!audioContainerRef.current || audioRef.current) return;
+    if (!audioRef.current) return;
 
     // Only validate on first mount
-    if (!node.attrs.src) {
-      setError('No audio source provided');
-      setLoading(false);
-      return;
+    if (!initializedRef.current) {
+      if (!node.attrs.src) {
+        setError('No audio source provided');
+        setLoading(false);
+        return;
+      }
+      initializedRef.current = true;
     }
 
-    // Create audio element imperatively
-    const audio = document.createElement('audio');
-    audio.src = node.attrs.src;
-    audio.title = node.attrs.title || '';
-    audio.draggable = false;
-    audio.className = 'w-full';
-    audio.preload = 'metadata';
-    audio.crossOrigin = 'anonymous';
-    audio.style.display = 'none'; // Hide the default audio element
-
-    audioContainerRef.current.appendChild(audio);
-    audioRef.current = audio;
-    initializedRef.current = true;
-
-    const audioElement = audio;
+    const audio = audioRef.current;
 
     const handleLoadedMetadata = () => {
-      if (isFinite(audioElement.duration) && audioElement.duration > 0) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         if (!durationSetRef.current) {
-          setDuration(audioElement.duration);
+          setDuration(audio.duration);
           durationSetRef.current = true;
         }
         // Always set loading to false when we have valid metadata
@@ -89,9 +76,9 @@ const AudioNodeView = ({
 
     const handleDurationChange = () => {
       // Only update duration if we haven't set it yet and it's valid
-      if (isFinite(audioElement.duration) && audioElement.duration > 0) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         if (!durationSetRef.current) {
-          setDuration(audioElement.duration);
+          setDuration(audio.duration);
           durationSetRef.current = true;
         }
         // Always set loading to false when we have valid duration
@@ -100,7 +87,7 @@ const AudioNodeView = ({
     };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(audioElement.currentTime);
+      setCurrentTime(audio.currentTime);
     };
 
     const handlePlay = () => {
@@ -117,8 +104,8 @@ const AudioNodeView = ({
 
     const handleError = () => {
       let errorMessage = 'Failed to load audio';
-      if (audioElement.error) {
-        switch (audioElement.error.code) {
+      if (audio.error) {
+        switch (audio.error.code) {
           case 1:
             errorMessage = 'Audio loading aborted';
             break;
@@ -145,34 +132,31 @@ const AudioNodeView = ({
       setLoading(false);
     };
 
-    audioElement.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audioElement.addEventListener('durationchange', handleDurationChange);
-    audioElement.addEventListener('timeupdate', handleTimeUpdate);
-    audioElement.addEventListener('play', handlePlay);
-    audioElement.addEventListener('pause', handlePause);
-    audioElement.addEventListener('ended', handleEnded);
-    audioElement.addEventListener('error', handleError);
-    audioElement.addEventListener('loadstart', handleLoadStart);
-    audioElement.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
-      audioElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audioElement.removeEventListener('durationchange', handleDurationChange);
-      audioElement.removeEventListener('timeupdate', handleTimeUpdate);
-      audioElement.removeEventListener('play', handlePlay);
-      audioElement.removeEventListener('pause', handlePause);
-      audioElement.removeEventListener('ended', handleEnded);
-      audioElement.removeEventListener('error', handleError);
-      audioElement.removeEventListener('loadstart', handleLoadStart);
-      audioElement.removeEventListener('canplay', handleCanPlay);
-
-      // Clean up: remove audio element from DOM
-      if (audioContainerRef.current && audioElement.parentNode) {
-        audioContainerRef.current.removeChild(audioElement);
-      }
-      audioRef.current = null;
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('durationchange', handleDurationChange);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('canplay', handleCanPlay);
     };
-  }, []); // Empty deps: Audio element created once on mount
+    // Empty deps: Event listeners only need to be set up once on mount.
+    // The audio element's src is managed via the audio tag's src attribute (line ~280),
+    // and event handlers use refs/setState which don't require re-setup on prop changes.
+  }, []);
 
   const togglePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -255,8 +239,15 @@ const AudioNodeView = ({
         }}
         className="relative"
       >
-        {/* Audio element container - element created imperatively in useEffect */}
-        <div ref={audioContainerRef} style={{ display: 'none' }} />
+        <audio
+          ref={audioRef}
+          src={node.attrs.src}
+          title={node.attrs.title || ''}
+          draggable={false}
+          className="w-full"
+          preload="metadata"
+          crossOrigin="anonymous"
+        />
         {selected && (
           <div
             className="absolute top-2 right-2 flex gap-2 bg-black/50 p-2 rounded"
@@ -420,12 +411,4 @@ const AudioNodeView = ({
   );
 };
 
-// Memoize component to prevent re-renders when node attributes haven't changed
-export default memo(AudioNodeView, (prevProps, nextProps) => {
-  // Only re-render if src, title, or selected state actually changed
-  return (
-    prevProps.node.attrs.src === nextProps.node.attrs.src &&
-    prevProps.node.attrs.title === nextProps.node.attrs.title &&
-    prevProps.selected === nextProps.selected
-  );
-});
+export default AudioNodeView;
