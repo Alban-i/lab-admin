@@ -20,6 +20,7 @@ export class AudioNodeView implements NodeView {
   private duration: number = 0;
   private currentTime: number = 0;
   private isDragging: boolean = false;
+  private isDestroyed: boolean = false;
 
   constructor(
     public node: ProseMirrorNode,
@@ -144,7 +145,10 @@ export class AudioNodeView implements NodeView {
     });
 
     this.audioElement.addEventListener('error', () => {
-      console.error('Audio loading error');
+      // Ignore errors if the node is being destroyed or dragged
+      if (!this.isDestroyed && !this.isDragging) {
+        console.error('Audio loading error');
+      }
     });
   }
 
@@ -158,9 +162,25 @@ export class AudioNodeView implements NodeView {
       this.audioElement.currentTime = newTime;
     });
 
+    // Hover to show edit buttons
+    this.dom.addEventListener('mouseenter', () => {
+      this.showEditButtons();
+    });
+
+    this.dom.addEventListener('mouseleave', () => {
+      // Only hide if not selected
+      if (!this.dom.classList.contains('ProseMirror-selectednode')) {
+        this.hideEditButtons();
+      }
+    });
+
     // Drag functionality
     this.dom.addEventListener('dragstart', (e) => {
       this.isDragging = true;
+
+      // Pause audio and prevent loading errors during drag
+      this.audioElement.pause();
+
       const pos = this.getPos();
       if (pos === undefined) return;
 
@@ -229,11 +249,13 @@ export class AudioNodeView implements NodeView {
 
   selectNode() {
     this.dom.classList.add('ProseMirror-selectednode');
+    this.container.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
     this.showEditButtons();
   }
 
   deselectNode() {
     this.dom.classList.remove('ProseMirror-selectednode');
+    this.container.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
     this.hideEditButtons();
   }
 
@@ -324,23 +346,37 @@ export class AudioNodeView implements NodeView {
   }
 
   destroy() {
-    // Pause audio before destroying
-    this.audioElement.pause();
+    // Mark as destroyed to prevent error logging
+    this.isDestroyed = true;
 
-    // Clean up event listeners (they'll be removed automatically when DOM is removed)
-    // but it's good practice to explicitly clean up
+    // Pause and clear audio
+    this.audioElement.pause();
     this.audioElement.src = '';
+
+    // Remove the audio element to fully stop any pending loads
+    this.audioElement.remove();
   }
 
   stopEvent(event: Event): boolean {
-    // Let click events through to buttons
     const target = event.target as HTMLElement;
+
+    // Let click events through to buttons (for play, skip, etc.)
     if (target.tagName === 'BUTTON' || target.closest('button')) {
       return true;
     }
 
-    // Stop other events from bubbling to the editor
-    return event.type !== 'dragstart' && event.type !== 'dragend';
+    // Allow mousedown events to propagate so the node can be selected
+    if (event.type === 'mousedown') {
+      return false;
+    }
+
+    // Allow drag events
+    if (event.type === 'dragstart' || event.type === 'dragend') {
+      return false;
+    }
+
+    // Stop all other events from bubbling to the editor
+    return true;
   }
 
   ignoreMutation(): boolean {
