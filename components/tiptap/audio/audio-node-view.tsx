@@ -35,12 +35,24 @@ const AudioNodeView = ({
   const [titleInput, setTitleInput] = useState('');
   const durationSetRef = useRef(false);
   const initializedRef = useRef(false);
+  const renderCountRef = useRef(0);
+  const mountTimeRef = useRef(Date.now());
+
+  // Track renders
+  renderCountRef.current++;
+  console.log(`🎵 [AudioNodeView] Render #${renderCountRef.current} | Position: ${getPos()} | Playing: ${playing} | Src: ${node.attrs.src?.substring(0, 50)}...`);
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    console.log(`🔧 [AudioNodeView] useEffect triggered | Pos: ${getPos()}`);
+
+    if (!audioRef.current) {
+      console.log(`⚠️ [AudioNodeView] No audioRef.current | Pos: ${getPos()}`);
+      return;
+    }
 
     // Only validate on first mount
     if (!initializedRef.current) {
+      console.log(`✅ [AudioNodeView] First mount | Pos: ${getPos()}`);
       if (!node.attrs.src) {
         setError('No audio source provided');
         setLoading(false);
@@ -50,6 +62,7 @@ const AudioNodeView = ({
     }
 
     const audio = audioRef.current;
+    console.log(`🎧 [AudioNodeView] Audio element | Paused: ${audio.paused} | CurrentTime: ${audio.currentTime} | Pos: ${getPos()}`);
 
     const handleLoadedMetadata = () => {
       if (isFinite(audio.duration) && audio.duration > 0) {
@@ -91,10 +104,12 @@ const AudioNodeView = ({
     };
 
     const handlePlay = () => {
+      console.log(`▶️ [AudioNodeView] Audio PLAY event | Pos: ${getPos()}`);
       setPlaying(true);
     };
 
     const handlePause = () => {
+      console.log(`⏸️ [AudioNodeView] Audio PAUSE event | Pos: ${getPos()}`);
       setPlaying(false);
     };
 
@@ -143,6 +158,7 @@ const AudioNodeView = ({
     audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
+      console.log(`🧹 [AudioNodeView] Cleanup (unmount) | Was playing: ${!audio.paused} | Pos: ${getPos()}`);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -289,6 +305,20 @@ const AudioNodeView = ({
                 {error}
               </div>
             )}
+
+            {/* Debug Info */}
+            <div className="flex items-center gap-2 text-xs bg-yellow-100 p-2 rounded border border-yellow-300">
+              <span className="font-semibold">🐛 Debug:</span>
+              <span>Pos: {getPos()}</span>
+              <span>•</span>
+              <span>Renders: {renderCountRef.current}</span>
+              <span>•</span>
+              <span>Age: {Math.floor((Date.now() - mountTimeRef.current) / 1000)}s</span>
+              <span>•</span>
+              <span className={playing ? 'text-green-600 font-bold' : 'text-gray-600'}>
+                {playing ? '▶️ PLAYING' : '⏸️ PAUSED'}
+              </span>
+            </div>
 
             {/* Title and metadata */}
             <div className="flex items-center justify-between">
