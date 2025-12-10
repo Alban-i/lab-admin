@@ -11,7 +11,7 @@ import {
   getIndividualSlugById,
 } from '@/lib/redirects';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   console.log('Request URL:', request.url);
   
   const { pathname } = request.nextUrl;
