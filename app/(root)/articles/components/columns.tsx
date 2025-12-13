@@ -11,6 +11,16 @@ export type ArticlesInDataTable = {
   title: string;
   status: ArticleStatus;
   slug: string;
+  language: string;
+};
+
+// Language display names
+const languageNames: Record<string, string> = {
+  ar: 'العربية',
+  en: 'English',
+  fr: 'Français',
+  de: 'Deutsch',
+  es: 'Español',
 };
 
 // Extend the ColumnDef type to include the label property
@@ -29,6 +39,26 @@ export const columns: ExtendedColumnDef<ArticlesInDataTable>[] = [
       return (
         <div className="px-2 text-left font-medium">{row.original.title}</div>
       );
+    },
+  },
+  {
+    accessorKey: 'language',
+    label: 'Language',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Language" />
+    ),
+    cell: ({ row }) => {
+      const language = row.original.language;
+      return (
+        <div className="px-2 text-center">
+          <Badge variant="outline" className="font-normal">
+            {languageNames[language] || language.toUpperCase()}
+          </Badge>
+        </div>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
   },
   {

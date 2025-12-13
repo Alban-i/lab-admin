@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
+import { revalidateCategories } from '@/actions/revalidate';
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -105,6 +106,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category }) => {
       }
 
       toast.success(toastMessage);
+
+      // Revalidate frontend cache
+      await revalidateCategories();
+
       router.refresh();
     } catch (error) {
       toast.error('Something went wrong');
@@ -130,6 +135,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category }) => {
       }
 
       toast.success('Category deleted successfully.');
+
+      // Revalidate frontend cache
+      await revalidateCategories();
+
       router.push('/categories');
       router.refresh();
     } catch (error) {

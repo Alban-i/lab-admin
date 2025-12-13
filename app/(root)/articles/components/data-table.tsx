@@ -8,6 +8,8 @@ import {
   VisibilityState,
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -27,15 +29,18 @@ import Link from 'next/link';
 
 import { DataTableToolbar } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
+import { Language } from '@/types/types';
 
 interface DataTableProps<TData extends { id: string; slug: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  languages: Language[];
 }
 
 export function DataTable<TData extends { id: string; slug: string }, TValue>({
   columns,
   data,
+  languages,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -50,6 +55,8 @@ export function DataTable<TData extends { id: string; slug: string }, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
@@ -67,7 +74,7 @@ export function DataTable<TData extends { id: string; slug: string }, TValue>({
   return (
     <div className="">
       <div className="mb-2 mt-4">
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} languages={languages} />
       </div>
 
       {/* ################## TABLE ################## */}

@@ -3,6 +3,10 @@ import { Database } from './types_db';
 export type Roles = Database['public']['Tables']['roles']['Row'];
 export type Role = 'admin' | 'author' | 'reader' | 'banned';
 
+export type Language = Database['public']['Tables']['languages']['Row'];
+export type LanguageCode = 'ar' | 'en' | 'fr' | 'de' | 'es';
+export type TextDirection = 'ltr' | 'rtl';
+
 export type ArticleStatus = 'Draft' | 'Published' | 'Archived';
 export type Articles = Omit<
   Database['public']['Tables']['articles']['Row'],

@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Posts, ProfilesWithRoles } from '@/types/types';
+import { Posts, ProfilesWithRoles, Language } from '@/types/types';
+import { PostTranslation } from '@/actions/get-post-translations';
 
 import {
   Form,
@@ -37,7 +38,10 @@ import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUpload from '@/components/image-upload';
-import { RevalidateButton } from '@/components/revalidate-button';
+import { revalidatePosts } from '@/actions/revalidate';
+import { Globe, Plus, ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const initialData: Omit<Posts, 'id'> & { id: null } = {
   id: null,
@@ -52,6 +56,9 @@ const initialData: Omit<Posts, 'id'> & { id: null } = {
   category_id: null,
   image_url: null,
   source: null,
+  language: 'ar',
+  translation_group_id: null,
+  is_original: true,
 };
 
 const formSchema = z.object({
@@ -64,6 +71,8 @@ const formSchema = z.object({
   image_url: z.string().optional(),
   type: z.enum(['twitter', 'global']),
   status: z.enum(['draft', 'published', 'archived']).optional(),
+  language: z.string().min(1, 'Language is required'),
+  is_original: z.boolean(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -72,9 +81,11 @@ interface PostFormProps {
   post: Posts | null;
   categories: { id: number; name: string }[];
   authors: ProfilesWithRoles[];
+  languages: Language[];
+  translations: PostTranslation[];
 }
 
-const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
+const PostForm: React.FC<PostFormProps> = ({ post, categories, authors, languages, translations }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>(post?.content || '');
@@ -98,9 +109,37 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
       image_url: defaultValues.image_url || '',
       type: (defaultValues.type as 'twitter' | 'global') || 'global',
       status: defaultValues.status as FormStatus,
+      language: defaultValues.language || 'ar',
+      is_original: defaultValues.is_original ?? true,
     },
     mode: 'onChange',
   });
+
+  // Get available languages for translation (excluding current post's language)
+  const availableLanguagesForTranslation = languages.filter(
+    (lang) => !translations.some((t) => t.language === lang.code)
+  );
+
+  // Create translation function
+  const createTranslation = (targetLanguage: string) => {
+    const targetLang = languages.find((l) => l.code === targetLanguage);
+    if (!targetLang || !defaultValues.id) return;
+
+    // Generate slug with language suffix
+    const baseSlug = defaultValues.slug || '';
+    const newSlug = `${baseSlug}-${targetLanguage}`;
+
+    // Navigate to new post page with translation params
+    const params = new URLSearchParams({
+      translate_from: defaultValues.id.toString(),
+      translation_group_id: defaultValues.translation_group_id || '',
+      language: targetLanguage,
+      slug: newSlug,
+      category_id: defaultValues.category_id?.toString() || '',
+    });
+
+    router.push(`/posts/new?${params.toString()}`);
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -113,6 +152,9 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
         status,
         category_id: values.category_id ? Number(values.category_id) : null,
         updated_at: new Date().toISOString(),
+        language: values.language,
+        translation_group_id: defaultValues.translation_group_id,
+        is_original: values.is_original,
       };
 
       console.log('Submitting post data:', postData);
@@ -131,6 +173,9 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
         }
 
         toast.success('Post updated successfully');
+
+        // Revalidate frontend cache
+        await revalidatePosts();
       } else {
         // Create new post
         const { data, error } = await supabase
@@ -146,6 +191,10 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
         }
 
         toast.success('Post created successfully');
+
+        // Revalidate frontend cache
+        await revalidatePosts();
+
         // Redirect to the new post's edit page
         if (data) {
           router.push(`/posts/${data.slug}`);
@@ -178,6 +227,10 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
       if (error) throw error;
 
       toast.success('Post deleted successfully');
+
+      // Revalidate frontend cache
+      await revalidatePosts();
+
       router.refresh();
       router.push('/posts');
     } catch (error) {
@@ -214,12 +267,6 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
                     {defaultValues.id && (
                       <DeleteButton label="Delete Post" fn={onDelete} />
                     )}
-
-                    <RevalidateButton
-                      path={`/posts/${defaultValues.id}`}
-                      label="Revalidate Post Page"
-                    />
-
                     <Button type="submit">{action}</Button>
                   </div>
                 </CardHeader>
@@ -371,6 +418,60 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                          Language
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a language" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                <span className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4" />
+                                  {lang.native_name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="is_original"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-2 col-span-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Mark as original</FormLabel>
+                          <FormDescription>
+                            This is the source post for all translations in this group
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -408,6 +509,103 @@ const PostForm: React.FC<PostFormProps> = ({ post, categories, authors }) => {
                   />
                 </CardContent>
               </Card>
+
+              {/* TRANSLATIONS */}
+              {defaultValues.id && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Translations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Existing translations */}
+                    {translations.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          Available translations:
+                        </p>
+                        <div className="space-y-2">
+                          {translations.map((translation) => {
+                            const lang = languages.find(
+                              (l) => l.code === translation.language
+                            );
+                            const isCurrent = translation.id === defaultValues.id;
+                            return (
+                              <div
+                                key={translation.id}
+                                className={`flex items-center justify-between p-2 rounded-md border ${
+                                  isCurrent ? 'bg-muted' : 'bg-background'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant={isCurrent ? 'default' : 'outline'}
+                                    className="text-xs"
+                                  >
+                                    {lang?.native_name || translation.language.toUpperCase()}
+                                  </Badge>
+                                  {translation.is_original && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Original
+                                    </Badge>
+                                  )}
+                                  <span className="text-sm truncate max-w-[120px]">
+                                    {translation.title}
+                                  </span>
+                                </div>
+                                {!isCurrent && (
+                                  <Link href={`/posts/${translation.slug}`}>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      type="button"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </Link>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Create new translation */}
+                    {availableLanguagesForTranslation.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          Create translation:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableLanguagesForTranslation.map((lang) => (
+                            <Button
+                              key={lang.code}
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              onClick={() => createTranslation(lang.code)}
+                              className="gap-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              {lang.native_name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {translations.length === 0 &&
+                      availableLanguagesForTranslation.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No translations available.
+                        </p>
+                      )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Full Width Content Card */}

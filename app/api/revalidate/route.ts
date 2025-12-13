@@ -1,14 +1,58 @@
 import { NextResponse } from 'next/server';
 
+/**
+ * Convert a path to cache tags for revalidation.
+ * Used for backwards compatibility with path-based revalidation.
+ */
+function pathToTags(path: string): string[] {
+  // Media paths - no frontend cache to revalidate
+  if (path.startsWith('/media')) {
+    return [];
+  }
+
+  // Convert common paths to tags
+  if (path === '/' || path === '') {
+    return ['articles', 'latest-articles', 'top-articles', 'featured-article', 'posts'];
+  }
+
+  if (path === '/articles' || path.startsWith('/articles')) {
+    return ['articles', 'latest-articles', 'top-articles', 'featured-article'];
+  }
+
+  if (path === '/posts' || path.startsWith('/posts')) {
+    return ['posts'];
+  }
+
+  if (path === '/individuals' || path.startsWith('/individuals')) {
+    return ['individuals'];
+  }
+
+  // Default: return empty array (nothing to revalidate)
+  return [];
+}
+
 export async function POST(request: Request) {
   try {
-    const { path } = await request.json();
+    const body = await request.json();
+    const { path, tags: providedTags } = body;
 
-    if (!path) {
-      return NextResponse.json(
-        { revalidated: false, message: 'Path parameter is required' },
-        { status: 400 }
-      );
+    // Determine tags to revalidate
+    let tags: string[] = [];
+
+    if (providedTags && Array.isArray(providedTags)) {
+      // New tag-based approach
+      tags = providedTags;
+    } else if (path) {
+      // Legacy path-based approach - convert to tags
+      tags = pathToTags(path);
+    }
+
+    if (tags.length === 0) {
+      return NextResponse.json({
+        revalidated: true,
+        message: 'No cache tags to revalidate',
+        tags: [],
+      });
     }
 
     // Get the frontend revalidation configuration
@@ -33,7 +77,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'x-revalidate-token': frontendRevalidateToken,
       },
-      body: JSON.stringify({ path }),
+      body: JSON.stringify({ tags }),
     });
 
     if (!response.ok) {
@@ -52,6 +96,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       revalidated: true,
+      tags,
       frontendResponse: result,
     });
   } catch (err) {

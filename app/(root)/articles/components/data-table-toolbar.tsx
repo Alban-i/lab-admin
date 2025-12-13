@@ -4,16 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table } from '@tanstack/react-table';
 import { DataTableViewOptions } from '@/app/(root)/profiles/components/data-table-view-options';
-import { XIcon } from 'lucide-react';
+import { XIcon, Globe } from 'lucide-react';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { Language } from '@/types/types';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
+  languages: Language[];
 }
 
 export function DataTableToolbar<TData>({
   table,
+  languages,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
+
+  const languageOptions = languages.map((lang) => ({
+    label: lang.native_name,
+    value: lang.code,
+    icon: Globe,
+  }));
 
   return (
     <div className="flex items-center justify-between">
@@ -26,6 +36,14 @@ export function DataTableToolbar<TData>({
           }
           className="max-w-sm bg-background"
         />
+
+        {table.getColumn('language') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('language')}
+            title="Language"
+            options={languageOptions}
+          />
+        )}
 
         {isFiltered && (
           <Button

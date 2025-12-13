@@ -32,6 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import type { Classification } from '@/types/types';
 import { generateSlug } from '@/lib/utils';
+import { revalidateTypes } from '@/actions/revalidate';
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -124,6 +125,10 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
       }
 
       toast.success(toastMessage);
+
+      // Revalidate frontend cache
+      await revalidateTypes();
+
       router.refresh();
     } catch (error) {
       toast.error('Something went wrong');
@@ -146,6 +151,10 @@ const TypeForm: React.FC<TypeFormProps> = ({ type }) => {
       }
 
       toast.success('Type deleted successfully.');
+
+      // Revalidate frontend cache
+      await revalidateTypes();
+
       router.push('/types');
       router.refresh();
     } catch (error) {

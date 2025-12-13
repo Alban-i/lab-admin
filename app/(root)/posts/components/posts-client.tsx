@@ -2,23 +2,25 @@
 
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Posts } from '@/types/types';
+import { Posts, Language } from '@/types/types';
 import Link from 'next/link';
 import { DataTable } from './data-table';
 import { columns } from './columns';
 import { ArticleStatus } from '@/types/types';
-import { RevalidateButton } from '@/components/revalidate-button';
+
 interface PostsClientProps {
   posts: Posts[];
+  languages: Language[];
 }
 
-const PostsClient: React.FC<PostsClientProps> = ({ posts }) => {
-  const refinedPosts = posts.map(({ id, title, status, slug }) => ({
+const PostsClient: React.FC<PostsClientProps> = ({ posts, languages }) => {
+  const refinedPosts = posts.map(({ id, title, status, slug, language }) => ({
     id: id.toString(),
     title: title ?? '',
     status: (status.charAt(0).toUpperCase() +
       status.slice(1).toLowerCase()) as ArticleStatus,
     slug,
+    language: language ?? 'ar',
   }));
 
   return (
@@ -27,8 +29,6 @@ const PostsClient: React.FC<PostsClientProps> = ({ posts }) => {
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-bold">Posts</h2>
         <div className="ml-auto flex items-center gap-2">
-          <RevalidateButton path="/posts" label="Revalidate Posts Page" />
-
           {/* NEW POST */}
           <Link href="/posts/new" passHref>
             <Button className="gap-1">
@@ -41,7 +41,7 @@ const PostsClient: React.FC<PostsClientProps> = ({ posts }) => {
         </div>
       </div>
 
-      <DataTable data={refinedPosts} columns={columns} />
+      <DataTable data={refinedPosts} columns={columns} languages={languages} />
     </div>
   );
 };

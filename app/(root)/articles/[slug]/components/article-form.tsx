@@ -9,7 +9,9 @@ import {
   ProfilesWithRoles,
   Tags,
   ArticleStatus,
+  Language,
 } from '@/types/types';
+import { ArticleTranslation } from '@/actions/get-article-translations';
 
 import {
   Form,
@@ -36,15 +38,18 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { Textarea } from '@/components/ui/textarea';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Globe, Plus, Star, Link2 } from 'lucide-react';
 import ImageUpload from '@/components/image-upload';
-import { RevalidateButton } from '@/components/revalidate-button';
 import { UsedMediaCard } from '@/components/media/used-media-card';
+import { revalidateArticle, revalidateArticles } from '@/actions/revalidate';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const initialData = {
   title: '',
@@ -58,6 +63,9 @@ const initialData = {
   published_at: null,
   is_featured: false,
   image_url: '',
+  language: 'ar',
+  translation_group_id: null,
+  is_original: true,
 } as const;
 
 const formSchema = z.object({
@@ -67,7 +75,9 @@ const formSchema = z.object({
   category_id: z.string().optional(),
   author_id: z.string().min(1, 'Author is required'),
   is_featured: z.boolean(),
+  is_original: z.boolean(),
   image_url: z.string().optional(),
+  language: z.string().min(1, 'Language is required'),
 });
 
 interface ArticleFormProps {
@@ -76,6 +86,8 @@ interface ArticleFormProps {
   tags: { id: number; name: string; created_at: string; updated_at: string }[];
   selectedTagIds: number[];
   authors: ProfilesWithRoles[];
+  languages: Language[];
+  translations: ArticleTranslation[];
 }
 
 const ArticleForm: React.FC<ArticleFormProps> = ({
@@ -84,6 +96,8 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
   tags,
   selectedTagIds,
   authors,
+  languages,
+  translations,
 }) => {
   const defaultValues = article ?? { ...initialData, is_featured: false };
   const [content, setContent] = useState<string>(defaultValues.content ?? '');
@@ -109,9 +123,37 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       category_id: defaultValues.category_id?.toString() ?? undefined,
       author_id: defaultValues.author_id?.toString() ?? undefined,
       is_featured: defaultValues.is_featured ?? false,
+      is_original: defaultValues.is_original ?? true,
       image_url: defaultValues.image_url ?? '',
+      language: defaultValues.language ?? 'ar',
     },
   });
+
+  // Get available languages for translation (excluding current article's language)
+  const availableLanguagesForTranslation = languages.filter(
+    (lang) => !translations.some((t) => t.language === lang.code)
+  );
+
+  // Create translation function
+  const createTranslation = (targetLanguage: string) => {
+    const targetLang = languages.find((l) => l.code === targetLanguage);
+    if (!targetLang || !defaultValues.id) return;
+
+    // Generate slug with language suffix
+    const baseSlug = defaultValues.slug ?? '';
+    const newSlug = `${baseSlug}-${targetLanguage}`;
+
+    // Navigate to new article page with translation params
+    const params = new URLSearchParams({
+      translate_from: defaultValues.id,
+      translation_group_id: defaultValues.translation_group_id ?? defaultValues.id,
+      language: targetLanguage,
+      slug: newSlug,
+      category_id: defaultValues.category_id?.toString() ?? '',
+    });
+
+    router.push(`/articles/new?${params.toString()}`);
+  };
 
   // Labels
   const toastMessage = defaultValues.id
@@ -123,6 +165,49 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
     try {
       setLoading(true);
 
+      let translationGroupId = defaultValues.translation_group_id;
+
+      // Shared data that goes to translation_groups
+      const sharedData = {
+        author_id: values.author_id || null,
+        category_id: values.category_id ? Number(values.category_id) : null,
+        image_url: values.image_url || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      // For new articles without translation_group_id, create a new translation_group
+      if (!translationGroupId) {
+        const { data: newGroup, error: groupError } = await supabase
+          .from('translation_groups')
+          .insert({
+            ...sharedData,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (groupError) {
+          toast.error('Failed to create translation group: ' + groupError.message);
+          setLoading(false);
+          return;
+        }
+
+        translationGroupId = newGroup.id;
+      } else {
+        // Update existing translation_group with shared data
+        const { error: updateGroupError } = await supabase
+          .from('translation_groups')
+          .update(sharedData)
+          .eq('id', translationGroupId);
+
+        if (updateGroupError) {
+          toast.error('Failed to update translation group: ' + updateGroupError.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Article-specific data
       const articleData = {
         title: values.title,
         summary: values.summary,
@@ -130,14 +215,18 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         slug: values.slug,
         status,
         is_featured: values.is_featured,
-        image_url: values.image_url,
+        is_original: values.is_original,
+        language: values.language,
+        translation_group_id: translationGroupId,
         published_at:
           status === 'published' &&
           defaultValues.status?.toLowerCase() !== 'published'
             ? new Date().toISOString()
             : defaultValues.published_at,
+        // Keep these for backward compatibility but they're managed via translation_groups now
         category_id: values.category_id ? Number(values.category_id) : null,
         author_id: values.author_id || null,
+        image_url: values.image_url || null,
         ...(defaultValues.id && { id: defaultValues.id }),
       };
 
@@ -161,12 +250,12 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         (tagId) => !selectedTags.includes(tagId)
       );
 
-      // Remove unselected tags
+      // Update tags in translation_group_tags
       if (tagsToRemove.length > 0) {
         const { error: deleteError } = await supabase
-          .from('article_tags')
+          .from('translation_group_tags')
           .delete()
-          .eq('article_id', data.id)
+          .eq('translation_group_id', translationGroupId)
           .in('tag_id', tagsToRemove);
 
         if (deleteError) {
@@ -175,16 +264,15 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         }
       }
 
-      // Add new tags
       if (tagsToAdd.length > 0) {
         const tagData = tagsToAdd.map((tagId) => ({
-          article_id: data.id,
+          translation_group_id: translationGroupId,
           tag_id: tagId,
         }));
 
         const { error: insertError } = await supabase
-          .from('article_tags')
-          .insert(tagData);
+          .from('translation_group_tags')
+          .upsert(tagData, { onConflict: 'translation_group_id,tag_id' });
 
         if (insertError) {
           toast.error('Failed to add new tags');
@@ -196,16 +284,22 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
         title: data.title ?? '',
         summary: data.summary ?? '',
         slug: data.slug ?? '',
-        category_id: data.category_id?.toString() ?? undefined,
-        author_id: data.author_id?.toString() ?? undefined,
+        category_id: values.category_id ?? undefined,
+        author_id: values.author_id ?? undefined,
         is_featured: data.is_featured ?? false,
-        image_url: data.image_url ?? '',
+        is_original: data.is_original ?? true,
+        image_url: values.image_url ?? '',
+        language: data.language ?? 'ar',
       });
 
       toast.success(toastMessage);
 
+      // Revalidate frontend cache
+      await revalidateArticle(data.slug);
+
       if (!defaultValues.id) {
         router.push(`/articles/${data.slug}`);
+        return; // Exit early - the new page will load fresh
       }
 
       router.refresh();
@@ -234,6 +328,9 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
       }
 
       toast.success('Article deleted.');
+
+      // Revalidate frontend cache
+      await revalidateArticles();
 
       router.push('/articles');
 
@@ -302,13 +399,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   </CardTitle>
                   <div className="flex gap-2">
                     {defaultValues.id && (
-                      <>
-                        <RevalidateButton
-                          path={`/articles/${form.getValues('slug')}`}
-                          label="Revalidate Article Page"
-                        />
-                        <DeleteButton label="Delete Article" fn={onDelete} />
-                      </>
+                      <DeleteButton label="Delete Article" fn={onDelete} />
                     )}
                     <Button type="submit">{action}</Button>
                   </div>
@@ -364,42 +455,11 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="category_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl className="w-full">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="author_id"
+                    name="language"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                          Author
+                          Language
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -407,13 +467,16 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                         >
                           <FormControl className="w-full">
                             <SelectTrigger>
-                              <SelectValue placeholder="Select an author" />
+                              <SelectValue placeholder="Select a language" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {authors.map((author) => (
-                              <SelectItem key={author.id} value={author.id}>
-                                {author.username || author.email || author.id}
+                            {languages.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                <span className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4" />
+                                  {lang.native_name}
+                                </span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -443,6 +506,7 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                       </FormItem>
                     )}
                   />
+
                 </CardContent>
               </Card>
 
@@ -492,54 +556,114 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
 
             {/* Right Column */}
             <div className="space-y-4">
-              {/* TAGS */}
+              {/* SHARED DATA */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Tags</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link2 className="h-5 w-5" />
+                    Shared Data
+                  </CardTitle>
+                  <CardDescription>
+                    Changes apply to all translations
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Button
-                        key={tag.id}
-                        variant={
-                          selectedTags.includes(tag.id) ? 'default' : 'outline'
-                        }
-                        size="sm"
-                        className="rounded-full"
-                        type="button"
-                        onClick={() => toggleTag(tag.id)}
-                      >
-                        {tag.name}
-                      </Button>
-                    ))}
+                <CardContent className="space-y-4">
+                  {/* Author */}
+                  <FormField
+                    control={form.control}
+                    name="author_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                          Author
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an author" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {authors.map((author) => (
+                              <SelectItem key={author.id} value={author.id}>
+                                {author.username || author.email || author.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Category */}
+                  <FormField
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl className="w-full">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem
+                                key={category.id}
+                                value={category.id.toString()}
+                              >
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Separator />
+
+                  {/* Tags */}
+                  <div className="space-y-2">
+                    <FormLabel>Tags</FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag) => (
+                        <Button
+                          key={tag.id}
+                          variant={
+                            selectedTags.includes(tag.id) ? 'default' : 'outline'
+                          }
+                          size="sm"
+                          className="rounded-full"
+                          type="button"
+                          onClick={() => toggleTag(tag.id)}
+                        >
+                          {tag.name}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* USED MEDIA */}
-              <UsedMediaCard 
-                articleId={defaultValues.id}
-                onMediaRemoved={() => {
-                  // Refresh can be added here if needed
-                }}
-              />
+                  <Separator />
 
-              {/* COVER IMAGE */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cover Image</CardTitle>
-                </CardHeader>
-                <CardContent>
+                  {/* Cover Image */}
                   <FormField
                     control={form.control}
                     name="image_url"
                     render={({ field }) => (
-                      <FormItem className="border p-2 rounded-md">
-                        <FormLabel className="font-semibold ml-2">
-                          Cover Image
-                        </FormLabel>
-                        <FormDescription className="ml-2">
+                      <FormItem>
+                        <FormLabel>Cover Image</FormLabel>
+                        <FormDescription>
                           1200 x 630
                         </FormDescription>
                         <FormControl>
@@ -556,7 +680,122 @@ const ArticleForm: React.FC<ArticleFormProps> = ({
                   />
                 </CardContent>
               </Card>
+
+              {/* USED MEDIA */}
+              <UsedMediaCard
+                articleId={defaultValues.id}
+                onMediaRemoved={() => {
+                  // Refresh can be added here if needed
+                }}
+              />
             </div>
+
+            {/* TRANSLATIONS - Full Width */}
+            {defaultValues.id && (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Translations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start">
+                    {/* Left column - Translations */}
+                    <div className="space-y-4">
+                      {/* Existing translations */}
+                      {translations.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Available translations:</span>
+                          <div className="flex flex-wrap items-center gap-2 p-3 rounded-md border bg-muted/50">
+                            {translations.map((translation) => {
+                              const lang = languages.find(
+                                (l) => l.code === translation.language
+                              );
+                              const isCurrent = translation.id === defaultValues.id;
+                              return isCurrent ? (
+                                <Badge
+                                  key={translation.id}
+                                  variant="default"
+                                  className="text-xs gap-1 cursor-default py-1.5 px-3"
+                                >
+                                  {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                  {lang?.native_name || translation.language.toUpperCase()}
+                                </Badge>
+                              ) : (
+                                <Link key={translation.id} href={`/articles/${translation.slug}`}>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs gap-1 cursor-pointer hover:bg-background py-1.5 px-3"
+                                  >
+                                    {translation.is_original && <Star className="h-3 w-3 fill-current" />}
+                                    {lang?.native_name || translation.language.toUpperCase()}
+                                  </Badge>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Create new translation */}
+                      {availableLanguagesForTranslation.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Add translation:</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {availableLanguagesForTranslation.map((lang) => (
+                              <Button
+                                key={lang.code}
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                onClick={() => createTranslation(lang.code)}
+                                className="gap-1 h-8"
+                              >
+                                <Plus className="h-3 w-3" />
+                                {lang.native_name}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {translations.length === 0 &&
+                        availableLanguagesForTranslation.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            No translations available.
+                          </p>
+                        )}
+                    </div>
+
+                    {/* Right column - Mark as original */}
+                    <div className="space-y-2">
+                      <span className="text-sm text-muted-foreground">Original status:</span>
+                      <FormField
+                        control={form.control}
+                        name="is_original"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center space-x-2 space-y-0 border rounded-md p-3 bg-muted/50">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Mark as original</FormLabel>
+                              <FormDescription>
+                                Source article for translations
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Full Width Content Card */}
             <Card className="md:col-span-2">

@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import { generateSlug } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import { revalidateTags } from '@/actions/revalidate';
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -95,6 +96,10 @@ const TagForm: React.FC<TagFormProps> = ({ tag }) => {
       }
 
       toast.success(toastMessage);
+
+      // Revalidate frontend cache
+      await revalidateTags();
+
       router.refresh();
     } catch (error) {
       toast.error('Something went wrong');
@@ -117,6 +122,10 @@ const TagForm: React.FC<TagFormProps> = ({ tag }) => {
       }
 
       toast.success('Tag deleted successfully.');
+
+      // Revalidate frontend cache
+      await revalidateTags();
+
       router.push('/tags');
       router.refresh();
     } catch (error) {

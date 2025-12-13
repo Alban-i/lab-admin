@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/providers/supabase/client';
 import Editor from '@/components/tiptap/editor';
-import { RevalidateButton } from '@/components/revalidate-button';
+import { revalidateIndividual, revalidateIndividuals } from '@/actions/revalidate';
 import { TabToggle } from '@/components/ui/tab-toggle';
 import { IndividualWithType } from '@/actions/get-individual';
 
@@ -127,6 +127,9 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
 
       toast.success(individual ? 'Individual updated.' : 'Individual created.');
 
+      // Revalidate frontend cache
+      await revalidateIndividual(data.slug);
+
       if (!individual?.id) {
         router.push(`/individuals/${data.slug}`);
       }
@@ -152,6 +155,10 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
       }
 
       toast.success('Individual deleted.');
+
+      // Revalidate frontend cache
+      await revalidateIndividuals();
+
       router.push('/individuals');
       router.refresh();
     } catch (error) {
@@ -172,13 +179,7 @@ const IndividualForm: React.FC<IndividualFormProps> = ({
                 </CardTitle>
                 <div className="flex gap-2">
                   {individual && (
-                    <>
-                      <RevalidateButton
-                        path={`/individuals/${individual.id}`}
-                        label="Revalidate Individual Page"
-                      />
-                      <DeleteButton label="Delete Individual" fn={onDelete} />
-                    </>
+                    <DeleteButton label="Delete Individual" fn={onDelete} />
                   )}
                   <Button type="submit">
                     {individual ? 'Save changes' : 'Create'}

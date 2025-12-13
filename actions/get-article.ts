@@ -10,12 +10,21 @@ const getArticle = async (
 
   const supabase = await createClient();
 
-  // Try to fetch by slug first, fallback to ID for backward compatibility
-  let query = supabase.from('articles').select(`*`);
-  
   // Check if identifier looks like a UUID (backward compatibility)
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
-  
+
+  // Fetch article with translation_groups join for shared data
+  let query = supabase
+    .from('articles')
+    .select(`
+      *,
+      translation_groups (
+        author_id,
+        category_id,
+        image_url
+      )
+    `);
+
   if (isUuid) {
     query = query.eq('id', identifier);
   } else {
@@ -31,10 +40,16 @@ const getArticle = async (
 
   if (!data) return null;
 
+  // Get shared data from translation_groups, fallback to article data for backward compatibility
+  const translationGroup = data.translation_groups as { author_id: string | null; category_id: number | null; image_url: string | null } | null;
+
   return {
     ...data,
+    // Use translation_groups data if available, otherwise fallback to article data
+    author_id: translationGroup?.author_id ?? data.author_id,
+    category_id: (translationGroup?.category_id ?? data.category_id)?.toString() || null,
+    image_url: translationGroup?.image_url ?? data.image_url,
     is_published: data.status.toLowerCase() === 'published',
-    category_id: data.category_id?.toString() || null,
   };
 };
 

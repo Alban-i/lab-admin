@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -118,11 +118,14 @@ export type Database = {
           id: string
           image_url: string | null
           is_featured: boolean | null
+          is_original: boolean
+          language: string
           published_at: string | null
           slug: string
           status: string
           summary: string
           title: string
+          translation_group_id: string | null
           updated_at: string | null
           views: number
         }
@@ -134,11 +137,14 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
+          is_original?: boolean
+          language?: string
           published_at?: string | null
           slug: string
           status: string
           summary: string
           title: string
+          translation_group_id?: string | null
           updated_at?: string | null
           views?: number
         }
@@ -150,11 +156,14 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
+          is_original?: boolean
+          language?: string
           published_at?: string | null
           slug?: string
           status?: string
           summary?: string
           title?: string
+          translation_group_id?: string | null
           updated_at?: string | null
           views?: number
         }
@@ -171,6 +180,20 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "articles_translation_group_id_fkey"
+            columns: ["translation_group_id"]
+            isOneToOne: false
+            referencedRelation: "translation_groups"
             referencedColumns: ["id"]
           },
           {
@@ -214,38 +237,58 @@ export type Database = {
           created_at: string | null
           definition: string
           id: number
+          is_original: boolean
+          language: string
           slug: string
           term: string
+          translation_group_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           definition: string
           id?: number
+          is_original?: boolean
+          language?: string
           slug: string
           term: string
+          translation_group_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           definition?: string
           id?: number
+          is_original?: boolean
+          language?: string
           slug?: string
           term?: string
+          translation_group_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "glossary_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       individuals: {
         Row: {
           created_at: string | null
           description: string | null
           id: number
+          is_original: boolean
+          language: string
           name: string
           original_name: string | null
           ranking: string | null
           slug: string
           status: string
+          translation_group_id: string | null
           type_id: number | null
           updated_at: string | null
         }
@@ -253,11 +296,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          is_original?: boolean
+          language?: string
           name: string
           original_name?: string | null
           ranking?: string | null
           slug: string
           status?: string
+          translation_group_id?: string | null
           type_id?: number | null
           updated_at?: string | null
         }
@@ -265,15 +311,25 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          is_original?: boolean
+          language?: string
           name?: string
           original_name?: string | null
           ranking?: string | null
           slug?: string
           status?: string
+          translation_group_id?: string | null
           type_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "individuals_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "individuals_type_id_fkey"
             columns: ["type_id"]
@@ -282,6 +338,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      languages: {
+        Row: {
+          code: string
+          created_at: string | null
+          direction: string
+          is_active: boolean
+          name: string
+          native_name: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          direction?: string
+          is_active?: boolean
+          name: string
+          native_name: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          direction?: string
+          is_active?: boolean
+          name?: string
+          native_name?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       maintenance_logs: {
         Row: {
@@ -410,10 +499,13 @@ export type Database = {
           created_at: string | null
           id: number
           image_url: string | null
+          is_original: boolean
+          language: string
           slug: string
           source: string | null
           status: string
           title: string
+          translation_group_id: string | null
           type: string
           updated_at: string | null
         }
@@ -424,10 +516,13 @@ export type Database = {
           created_at?: string | null
           id?: number
           image_url?: string | null
+          is_original?: boolean
+          language?: string
           slug: string
           source?: string | null
           status?: string
           title: string
+          translation_group_id?: string | null
           type: string
           updated_at?: string | null
         }
@@ -438,10 +533,13 @@ export type Database = {
           created_at?: string | null
           id?: number
           image_url?: string | null
+          is_original?: boolean
+          language?: string
           slug?: string
           source?: string | null
           status?: string
           title?: string
+          translation_group_id?: string | null
           type?: string
           updated_at?: string | null
         }
@@ -459,6 +557,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_language_fkey"
+            columns: ["language"]
+            isOneToOne: false
+            referencedRelation: "languages"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -598,6 +703,81 @@ export type Database = {
           },
         ]
       }
+      translation_group_tags: {
+        Row: {
+          created_at: string | null
+          tag_id: number
+          translation_group_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          tag_id: number
+          translation_group_id: string
+        }
+        Update: {
+          created_at?: string | null
+          tag_id?: number
+          translation_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_group_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_group_tags_translation_group_id_fkey"
+            columns: ["translation_group_id"]
+            isOneToOne: false
+            referencedRelation: "translation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      translation_groups: {
+        Row: {
+          author_id: string | null
+          category_id: number | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category_id?: number | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category_id?: number | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_groups_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_groups_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       types: {
         Row: {
           classification: string | null
@@ -669,22 +849,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_old_view_tracking: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_view_tracking: { Args: never; Returns: undefined }
       increment_article_views: {
         Args: { article_slug: string; viewer_ip: string }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_author: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
+      is_author: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
