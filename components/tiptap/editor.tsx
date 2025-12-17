@@ -54,6 +54,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Toggle } from '@/components/ui/toggle';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { CustomAudioExtension } from './audio/custom-audio-extension';
 import CustomImageExtension from './image/custom-image-extension';
 import { CustomVideoExtension } from './video/video-extension';
@@ -101,6 +103,7 @@ export default function Editor({
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGlossarySelectorOpen, setIsGlossarySelectorOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [showRawHtml, setShowRawHtml] = useState(false);
   const savedCursorPositionRef = useRef<number | null>(null);
   const lastContentRef = useRef<string>(content);
 
@@ -838,14 +841,29 @@ export default function Editor({
       <div className="mt-2 text-sm text-muted-foreground">
         {editor.storage.characterCount.characters()} characters
       </div>
-      <div className="mt-4">
-        <h3 className="text-sm font-medium mb-2">Raw HTML</h3>
-        <pre className="bg-muted p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md">
-          <code className="whitespace-pre-wrap">
-            {editor.getHTML().replace(/></g, '>\n<')}
-          </code>
-        </pre>
+
+      <Separator className="my-4" />
+
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="show-raw-html"
+          checked={showRawHtml}
+          onCheckedChange={setShowRawHtml}
+        />
+        <Label htmlFor="show-raw-html" className="text-sm font-medium">
+          Show Raw HTML
+        </Label>
       </div>
+
+      {showRawHtml && (
+        <div className="mt-4">
+          <pre className="bg-muted p-4 rounded-lg border text-sm font-mono overflow-x-auto shadow-md max-h-96">
+            <code className="whitespace-pre-wrap">
+              {editor.getHTML().replace(/></g, '>\n<')}
+            </code>
+          </pre>
+        </div>
+      )}
 
       {/* Media Library Modal */}
       <MediaLibraryModal

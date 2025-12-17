@@ -276,6 +276,41 @@ export type Database = {
           },
         ]
       }
+      individual_translation_groups: {
+        Row: {
+          created_at: string | null
+          id: string
+          original_name: string | null
+          ranking: string | null
+          type_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          original_name?: string | null
+          ranking?: string | null
+          type_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          original_name?: string | null
+          ranking?: string | null
+          type_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_translation_groups_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       individuals: {
         Row: {
           created_at: string | null
@@ -329,6 +364,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "languages"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "individuals_translation_group_id_fkey"
+            columns: ["translation_group_id"]
+            isOneToOne: false
+            referencedRelation: "individual_translation_groups"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "individuals_type_id_fkey"
